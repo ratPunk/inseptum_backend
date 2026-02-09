@@ -5,13 +5,13 @@ error_reporting(E_ALL);
 
 function loginUser($connect, $username, $password){
 
-    if(empty($username) || empty($password) || empty($confirmPassword)){
-
+    if(empty($username) || empty($password)){
         http_response_code(400);
         $res = [
             "status" => false,
             "message" => "Данные пользователя не заполнены"
         ];
+        return json_encode($res);
     }
 
     $username = mysqli_real_escape_string($connect, $username);
@@ -29,12 +29,14 @@ function loginUser($connect, $username, $password){
             "status" => false,
             "message" => "Пользователь не найден"
         ];
+        return json_encode($res);
     }elseif(!password_verify($password, $user["password"])){
         http_response_code(400);
         $res = [
             "status" => false,
-            "message" => "Неверные данные"
+            "message" => "Неверный пароль"
         ];
+        return json_encode($res);
     }else{
         http_response_code(200);
         $res = [
