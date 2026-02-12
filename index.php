@@ -17,6 +17,7 @@ require_once __DIR__ . '/config/database.php';
 require __DIR__ . '/controller.php';
 require __DIR__ . '/api/register.php';
 require __DIR__ . '/api/login.php';
+require __DIR__ . '/api/modules.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -28,6 +29,9 @@ $id = $params[1] ?? '';
 if($method == 'GET') {
     if($type == 'users'){
         $response = getUsers($connect);
+        echo $response;
+    }elseif($type == 'module'){
+        $response = getModules($connect, $id);
         echo $response;
     }
 }elseif($method == 'POST') {
