@@ -38,6 +38,11 @@ function registerUser($connect, $username, $password, $confirmPassword){
         return json_encode($res);
     }
 
+    $password = mysqli_real_escape_string($connect, $password);
+    $password = str_replace(" ", "", $password);
+
+    $confirmPassword = mysqli_real_escape_string($connect, $confirmPassword);
+    $confirmPassword = str_replace(" ", "", $confirmPassword);
 
     if(mb_strlen($password) < 3){
         http_response_code(400);
@@ -47,12 +52,6 @@ function registerUser($connect, $username, $password, $confirmPassword){
         ];
         return json_encode($res);
     }
-
-    $password = mysqli_real_escape_string($connect, $password);
-    $password = str_replace(" ", "", $password);
-
-    $confirmPassword = mysqli_real_escape_string($connect, $confirmPassword);
-    $confirmPassword = str_replace(" ", "", $confirmPassword);
 
     if($password != $confirmPassword){
         http_response_code(400);
