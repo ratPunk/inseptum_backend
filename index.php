@@ -19,6 +19,7 @@ require __DIR__ . '/api/register.php';
 require __DIR__ . '/api/login.php';
 require __DIR__ . '/api/modules.php';
 require __DIR__ . '/api/topics.php';
+require __DIR__ . '/api/articles.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -36,6 +37,9 @@ if($method == 'GET') {
         echo $response;
     }elseif($type == 'topics'){
         $response = getTopics($connect, $id);
+        echo $response;
+    }elseif($type == 'articles'){
+        $response = getArticles($connect, $id);
         echo $response;
     }
 }elseif($method == 'POST') {
