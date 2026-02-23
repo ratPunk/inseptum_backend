@@ -20,6 +20,7 @@ require __DIR__ . '/api/login.php';
 require __DIR__ . '/api/modules.php';
 require __DIR__ . '/api/topics.php';
 require __DIR__ . '/api/articles.php';
+require __DIR__ . '/api/getArticleFile.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -40,6 +41,13 @@ if($method == 'GET') {
         echo $response;
     }elseif($type == 'articles'){
         $response = getArticles($connect, $id);
+        echo $response;
+    }elseif($type == 'article'){
+        $response = getArticle($connect, $id);
+        echo $response;
+    }
+    elseif($type == 'articlefile'){
+        $response = getArticleFile($connect, $id);
         echo $response;
     }
 }elseif($method == 'POST') {
