@@ -1,0 +1,15 @@
+{
+    "name": "alexandr/inseptum_backend",
+    "description": "Серверная часть проекта inseptum",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "ratPunk"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "phpoffice/phpword": "^1.3"
+    }
+}
