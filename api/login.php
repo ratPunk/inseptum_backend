@@ -23,32 +23,36 @@ function loginUser($connect, $username, $password){
 
     $user = mysqli_query($connect, "SELECT * FROM users WHERE username = '".$username."'");
     $user = mysqli_fetch_assoc($user);
-    if($user === null){
+
+    if(!$user){
         http_response_code(400);
         $res = [
             "status" => false,
             "message" => "Пользователь не найден"
         ];
         return json_encode($res);
-    }elseif(!password_verify($password, $user["password"])){
+    }
+    
+    if(!password_verify($password, $user["password"])){
         http_response_code(400);
         $res = [
             "status" => false,
             "message" => "Неверный пароль"
         ];
         return json_encode($res);
-    }else{
-        http_response_code(200);
-        $res = [
-            "status" => true,
-            "message" => "User logged in",
-            "data" => [
-                'user_id' => $user['id'],
-                'username' => $user['username'],
-                'created_at' => $user['created_at']
-            ]
-        ];
     }
-
+    
+    // session_regenerate_id(true);
+    http_response_code(200);
+    $res = [
+        "status" => true,
+        "message" => "User logged in",
+        "data" => [
+            'user_id' => $user['id'],
+            'username' => $user['username'],
+            'created_at' => $user['created_at']
+        ]
+    ];
+    
     return json_encode($res);
 }
