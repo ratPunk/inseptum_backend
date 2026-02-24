@@ -3,16 +3,22 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-function getTopics($connect, $module_id = null) {
-    if ($module_id) {
-        $module_id = (int)$module_id;
-        $query = mysqli_query($connect, "SELECT topics.*, modules.title AS module_title FROM topics LEFT JOIN modules ON topics.module_id = modules.id WHERE module_id = $module_id ORDER BY id");
+function getTopics($connect, $moduleIdentifier = null) {
+    if ($moduleIdentifier) {
+
+        $sql = '';
+        if(is_numeric($moduleIdentifier)) {
+            $sql = "SELECT topics.*, modules.title AS module_title FROM topics LEFT JOIN modules ON topics.module_id = modules.id WHERE module_id = $moduleIdentifier ORDER BY id";
+        }else{
+            $sql = "SELECT topics.*, modules.title AS module_title FROM topics LEFT JOIN modules ON topics.module_id = modules.id WHERE LOWER(modules.title) = LOWER('$moduleIdentifier') ORDER BY id";
+        }
+        $query = mysqli_query($connect, $sql);
         
         if (!$query || mysqli_num_rows($query) === 0) {
             http_response_code(404);
             return json_encode([
                 "status" => false,
-                "message" => "Тема не найдена"
+                "message" => "Темы по модулю не найдены"
             ]);
         }
         
@@ -42,7 +48,7 @@ function getTopics($connect, $module_id = null) {
 
         $topics = [];
         while ($row = mysqli_fetch_assoc($query)) {
-            $topics[] = $row; 
+            $topics[] = $row;
         }
 
         http_response_code(200);
