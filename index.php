@@ -21,6 +21,7 @@ require __DIR__ . '/api/modules.php';
 require __DIR__ . '/api/topics.php';
 require __DIR__ . '/api/articles.php';
 require __DIR__ . '/api/getArticleFile.php';
+require __DIR__ . '/api/readArticle.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -28,6 +29,7 @@ $params = $url ? explode('/', trim($url, '/')) : [];
 
 $type = $params[0] ?? '';
 $id = $params[1] ?? '';
+$user_id = $params[2] ?? '';
 
 if($method == 'GET') {
     if($type == 'users'){
@@ -49,7 +51,11 @@ if($method == 'GET') {
     elseif($type == 'articlefile'){
         $response = getArticleFile($connect, $id);
         echo $response;
+    }elseif($type == 'readarticle'){
+        $response = getReadArticle($connect,  $id, $user_id);
+        echo $response;
     }
+
 }elseif($method == 'POST') {
     $jsonData = file_get_contents('php://input');
     $data = json_decode($jsonData, true);
@@ -57,6 +63,9 @@ if($method == 'GET') {
     $username = $data['username'] ?? '';
     $password = $data['password'] ?? '';
     $confirmPassword = $data['confirm_password'] ?? '';
+
+    $article_id = $data['article_id'] ?? '';
+    $user_id = $data['user_id'] ?? '';
 
     if($type == 'users'){
         $response  = createUser($connect, $username, $password);
@@ -67,5 +76,9 @@ if($method == 'GET') {
     }elseif($type == 'login'){
         $response = loginUser($connect, $username, $password);
         echo $response;
+    }elseif($type == 'readarticle'){
+        $response = setReadArticle($connect,  $article_id, $user_id);
+        echo $response;
     }
+
 }
