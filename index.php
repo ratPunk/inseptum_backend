@@ -22,6 +22,8 @@ require __DIR__ . '/api/topics.php';
 require __DIR__ . '/api/articles.php';
 require __DIR__ . '/api/getArticleFile.php';
 require __DIR__ . '/api/readArticle.php';
+require __DIR__ . '/api/tests.php';
+require __DIR__ . '/api/getTestFile.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -54,6 +56,9 @@ if($method == 'GET') {
     }elseif($type == 'readarticle'){
         $response = getReadArticle($connect,  $id, $user_id);
         echo $response;
+    }elseif($type == 'tests'){
+        $response = getTests($connect, $id);
+        echo $response;
     }
 
 }elseif($method == 'POST') {
@@ -67,6 +72,10 @@ if($method == 'GET') {
     $article_id = $data['article_id'] ?? '';
     $user_id = $data['user_id'] ?? '';
 
+    $test_id = $data['test_id'] ?? '';
+    $question_id = $data['question_id'] ?? '';
+    $user_answers = $data['user_answers'] ?? '';
+
     if($type == 'users'){
         $response  = createUser($connect, $username, $password);
         echo $response;
@@ -78,6 +87,12 @@ if($method == 'GET') {
         echo $response;
     }elseif($type == 'readarticle'){
         $response = setReadArticle($connect,  $article_id, $user_id);
+        echo $response;
+    }elseif($type == 'gettestfile'){
+        $response = getTestFile($connect, $test_id, $question_id);
+        echo $response;
+    }elseif($type === 'gettestresults'){
+        $response = getCorrectAnswers($connect, $test_id, $user_answers);
         echo $response;
     }
 
