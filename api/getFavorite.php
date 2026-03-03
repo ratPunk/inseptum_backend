@@ -24,9 +24,30 @@ function getFavorite($connect, $user_id, $favorite_type ) {
                 "status" => false,
                 "message" => "Статьи не найдены"
             ]);
-    }
+        }
     }elseif($favorite_type === 'test'){
-        
+        $result = mysqli_query($connect, "SELECT * FROM `user_test_favorite` WHERE `user_id` = $user_id");
+        $favorite = [];
+        if (mysqli_num_rows($result) > 0) {
+            while ($row = mysqli_fetch_assoc($result)) {
+            $favorite[] = $row;
+            }
+
+            http_response_code(200);
+            return json_encode([
+                "status" => true,
+                "message" => "tests найдены",
+                "data" => $favorite,
+                "count" => count($favorite)
+            ], JSON_UNESCAPED_UNICODE);
+        } 
+        else {
+            http_response_code(404);
+            return json_encode([
+                "status" => false,
+                "message" => "tests не найдены"
+            ]);
+        }
     }else{
         http_response_code(404);
         return json_encode([

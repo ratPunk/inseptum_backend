@@ -26,6 +26,7 @@ require __DIR__ . '/api/tests.php';
 require __DIR__ . '/api/getTestFile.php';
 require __DIR__ . '/api/getFavorite.php';
 require __DIR__ . '/api/setFavorite.php';
+require __DIR__ . '/api/passedTEst.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -60,9 +61,6 @@ if($method == 'GET') {
         echo $response;
     }elseif($type == 'tests'){
         $response = getTests($connect, $id);
-        echo $response;
-    }elseif($type == 'getfavorite'){
-        $response = getFavorite($connect, $id, 'article');
         echo $response;
     }
 
@@ -107,6 +105,12 @@ if($method == 'GET') {
         echo $response;
     }elseif($type == 'setfavorite'){
         $response = setFavorite($connect, $user_id, $favorite_id, $favorite_type);
+        echo $response;
+    }elseif($type == 'setpassedtest'){
+        $response = setPassedTest($connect, $user_id, $test_id);
+        echo $response;
+    }elseif($type == 'getpassedtest'){
+        $response = getPassedTest($connect, $user_id, $test_id);
         echo $response;
     }
 
