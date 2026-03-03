@@ -24,6 +24,8 @@ require __DIR__ . '/api/getArticleFile.php';
 require __DIR__ . '/api/readArticle.php';
 require __DIR__ . '/api/tests.php';
 require __DIR__ . '/api/getTestFile.php';
+require __DIR__ . '/api/getFavorite.php';
+require __DIR__ . '/api/setFavorite.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $url = $_GET['url'] ?? '';
@@ -59,6 +61,9 @@ if($method == 'GET') {
     }elseif($type == 'tests'){
         $response = getTests($connect, $id);
         echo $response;
+    }elseif($type == 'getfavorite'){
+        $response = getFavorite($connect, $id, 'article');
+        echo $response;
     }
 
 }elseif($method == 'POST') {
@@ -75,6 +80,9 @@ if($method == 'GET') {
     $test_id = $data['test_id'] ?? '';
     $question_id = $data['question_id'] ?? '';
     $user_answers = $data['user_answers'] ?? '';
+
+    $favorite_id = $data['favorite_id'] ?? '';
+    $favorite_type = $data['favorite_type'] ?? '';
 
     if($type == 'users'){
         $response  = createUser($connect, $username, $password);
@@ -93,6 +101,12 @@ if($method == 'GET') {
         echo $response;
     }elseif($type === 'gettestresults'){
         $response = getCorrectAnswers($connect, $test_id, $user_answers);
+        echo $response;
+    }elseif($type == 'getfavorite'){
+        $response = getFavorite($connect, $user_id, $favorite_type);
+        echo $response;
+    }elseif($type == 'setfavorite'){
+        $response = setFavorite($connect, $user_id, $favorite_id, $favorite_type);
         echo $response;
     }
 
