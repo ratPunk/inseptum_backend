@@ -1,8 +1,17 @@
 <?php
 function getTests($connect, $test_id = null) {
+    $sql = "SELECT 
+                tests.*, 
+                articles.title AS article_title,
+                modules.title AS module_title 
+            FROM tests 
+            LEFT JOIN articles ON tests.id = articles.test_id 
+            LEFT JOIN topics ON articles.topic_id = topics.id 
+            LEFT JOIN modules ON topics.module_id = modules.id";
+
     if (!$test_id) {
 
-        $query = mysqli_query($connect, "SELECT tests.*, modules.title AS module_title FROM tests LEFT JOIN articles ON tests.id = articles.test_id LEFT JOIN topics ON articles.topic_id = topics.id LEFT JOIN modules ON topics.module_id = modules.id");
+        $query = mysqli_query($connect, $sql);
 
         if (!$query || mysqli_num_rows($query) === 0) {
             http_response_code(404);
@@ -27,7 +36,7 @@ function getTests($connect, $test_id = null) {
 
     }else{
         $test_id = (int)$test_id;
-        $query = mysqli_query($connect, "SELECT tests.*, modules.title AS module_title FROM tests LEFT JOIN articles ON tests.id = articles.test_id LEFT JOIN topics ON articles.topic_id = topics.id LEFT JOIN modules ON topics.module_id = modules.id WHERE tests.id = $test_id");
+        $query = mysqli_query($connect, $sql . " WHERE tests.id = $test_id");
         
         if (!$query || mysqli_num_rows($query) === 0) {
             http_response_code(404);

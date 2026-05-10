@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест API</title>
+</head>
+<body>
+    <h2>Тестирование API</h2>
+    <button onclick="testAPI()">Тест регистрации (POST /users)</button>
+    <button onclick="testLogin()">Тест логина (POST /login)</button>
+    <button onclick="testGET()">Тест GET /users</button>
+    
+    <script>
+        async function sendRequest(url, method = 'GET', data = null) {
+            console.log(`📤 Отправка ${method} ${url}...`);
+            
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            const response = await fetch('http://localhost/inseptum_backend/' + url, options);
+            
+            console.log('📥 Ответ получен:');
+            console.log('Статус:', response.status, response.statusText);
+            console.log('Заголовки:', Object.fromEntries(response.headers.entries()));
+            
+            // Получаем текст ответа
+            const text = await response.text();
+            
+            // ДИАГНОСТИКА
+            console.log('=== ДИАГНОСТИКА ===');
+            console.log('Полный ответ:', text);
+            
+            if (text.length > 0) {
+                console.log('Первый символ (код):', text.charCodeAt(0));
+                console.log('Первые 200 символов:', text.substring(0, 200));
+            }
+            
+            // Пробуем парсить
+            try {
+                const data = JSON.parse(text);
+                console.log('✅ JSON валиден:', data);
+                alert(`✅ ${method} ${url}\n\n${JSON.stringify(data, null, 2)}`);
+                return { success: true, data };
+            } catch (e) {
+                console.log('❌ JSON невалиден:', e.message);
+                alert(`❌ Ошибка в ${method} ${url}:\n${e.message}\n\nОтвет сервера:\n${text.substring(0, 300)}`);
+                return { success: false, error: e.message, text };
+            }
+        }
+        
+        async function testAPI() {
+            await sendRequest('register', 'POST', {
+                username: 'Иван',
+                password: '123456',
+                confirm_password: '123456'
+            });
+        }
+
+        async function testLogin() {
+            await sendRequest('login', 'POST', {
+                username: 'Иван',
+                password: '123456'
+            });
+        }
+        
+        async function testGET() {
+            await sendRequest('users', 'GET');
+        }
+    </script>
+    
+    <div style="margin-top: 20px; color: #666; font-size: 12px;">
+        Проверяемые endpoints:<br>
+        • POST /users - регистрация<br>
+        • POST /login - авторизация<br>
+        • GET /users - получение пользователей
+    </div>
+</body>
+</html>
