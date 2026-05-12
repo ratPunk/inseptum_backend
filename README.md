@@ -7,6 +7,34 @@ PHP backend для проекта *inseptum*. Чистая MVC-подобная 
 [`logger.php`](logger.php)) — удалён. Точка входа одна:
 [`public/index.php`](public/index.php:1).
 
+> Этот README рассчитан в том числе на то, чтобы по нему можно было
+> переписать фронтенд под текущий backend без чтения PHP-кода.
+> Полный контракт API — в разделе [«HTTP API»](#http-api).
+
+---
+
+## Оглавление
+
+- [Быстрый старт](#быстрый-старт)
+- [Базовый URL и заголовки](#базовый-url-и-заголовки)
+- [Формат ответа и ошибок](#формат-ответа-и-ошибок)
+- [Авторизация](#авторизация)
+- [Загрузка файлов](#загрузка-файлов)
+- [HTTP API](#http-api)
+  - [Modules](#modules)
+  - [Topics](#topics)
+  - [Articles](#articles)
+  - [Article File / Read progress](#article-file--read-progress)
+  - [Tests](#tests)
+  - [Test File / Results / Passed](#test-file--results--passed)
+  - [Tasks](#tasks)
+  - [Favorites](#favorites)
+  - [Auth](#auth)
+- [Структура проекта](#структура-проекта)
+- [Как добавить новую сущность](#как-добавить-новую-сущность)
+
+---
+
 ## Быстрый старт
 
 1. Установите Composer-зависимости и регенерируйте автолоадер:
@@ -25,13 +53,349 @@ PHP backend для проекта *inseptum*. Чистая MVC-подобная 
    чтобы приложение корректно работало в подпапке (например, MAMP:
    `http://localhost/inseptum_backend/...`).
 
-4. Проверка:
+4. Импортируйте дамп БД из [`inseptum.sql`](inseptum.sql:1).
+
+5. Проверка:
 
    ```
    GET  http://localhost/inseptum_backend/modules
    GET  http://localhost/inseptum_backend/modules/1
    POST http://localhost/inseptum_backend/login
    ```
+
+---
+
+## Базовый URL и заголовки
+
+- **Base URL (dev/MAMP):** `http://localhost/inseptum_backend`
+- Все ответы — `Content-Type: application/json; charset=utf-8`.
+- Тело запроса принимается в одном из форматов
+  (см. [`Request::fromGlobals()`](src/Http/Request.php:27)):
+  - `application/json` — рекомендованный для POST без файлов.
+  - `application/x-www-form-urlencoded` — поддерживается (`$_POST`).
+  - `multipart/form-data` — обязательно для эндпоинтов с загрузкой
+    файлов (статьи, тесты).
+- Query string parameters — обычные `?key=value`, ключ `url`
+  зарезервирован роутером и игнорируется в `query()`.
+
+> CORS-заголовки в коде сейчас **не выставляются**. Если фронт
+> поднимается на другом origin, нужно либо настроить CORS в
+> Apache/`.htaccess`, либо добавить middleware. Это TODO для
+> backend-команды.
+
+---
+
+## Формат ответа и ошибок
+
+Все контроллеры (за исключением `POST /checktask`, см. ниже) отдают
+JSON одного из двух видов через
+[`AbstractController`](src/Http/Controllers/AbstractController.php:1).
+
+### Успех
+
+```json
+{
+  "status": true,
+  "message": "Модули найдены",
+  "data": [ /* payload */ ],
+  "count": 12
+}
+```
+
+- `status` — всегда `true` при HTTP 2xx.
+- `message` — человекочитаемое сообщение (на русском).
+- `data` — основной payload (объект, массив, строка или `null`).
+  Поле может отсутствовать, если сервис ничего не возвращает.
+- Дополнительные поля (`count`, …) добавляются «в корень» ответа,
+  а не внутрь `data` — это важно для списочных эндпоинтов.
+
+### Ошибка
+
+```json
+{
+  "status": false,
+  "message": "Не все поля заполнены",
+  "errors": {
+    "title": "Название модуля обязательно"
+  }
+}
+```
+
+[`Application::handleException()`](src/Core/Application.php:70)
+маппит исключения на HTTP-статусы:
+
+| Исключение | HTTP | Поле `errors` |
+|---|---|---|
+| [`ValidationException`](src/Exceptions/ValidationException.php:1) | 422 | да (поле → сообщение) |
+| [`NotFoundException`](src/Exceptions/NotFoundException.php:1)     | 404 | нет |
+| [`UnauthorizedException`](src/Exceptions/UnauthorizedException.php:1) | 401 | нет |
+| [`ConflictException`](src/Exceptions/ConflictException.php:1)     | 409 | нет |
+| любая `Throwable`                                                 | 500 | нет (логируется) |
+
+Кроме того контроллеры могут вернуть `400` напрямую (через
+`error()`) для базовых проверок типа «не передан id».
+
+### Особый случай: `POST /checktask`
+
+Возвращает **legacy-формат** без обёртки:
+
+```json
+{ "success": true, "message": "ИИ проверил задачу '...': ..." }
+```
+
+или при ошибке валидации/исключении — стандартный
+`{status:false, message:..., errors?:...}`.
+
+---
+
+## Авторизация
+
+> ⚠️ В текущей версии **нет JWT, нет cookie-сессий, нет middleware
+> авторизации**. Любой эндпоинт доступен без заголовков. «Кто
+> делает запрос» определяется по полю `user_id` в теле запроса
+> (передаёт сам фронт после логина).
+
+- `POST /login` — обычный пользователь. Возвращает в `data`:
+  ```json
+  { "user_id": 7, "username": "alice", "created_at": "2025-01-01 12:00:00" }
+  ```
+- `POST /adminlogin` — администратор. Возвращает в `data`:
+  ```json
+  { "user_id": 1, "username": "admin" }
+  ```
+- `POST /register` — регистрирует пользователя, возвращает то же,
+  что и `/login`, но HTTP 201.
+
+Фронт должен:
+1. Сохранить `user_id` (например, в `localStorage`) после логина.
+2. Передавать `user_id` в теле тех запросов, где он требуется
+   (см. колонку «Body» в таблицах ниже).
+3. Отличие админских действий (создание/правка/удаление модулей,
+   тем, статей, тестов) от пользовательских **на уровне API не
+   проверяется** — это TODO. Фронт должен сам прятать UI от
+   неадминов.
+
+---
+
+## Загрузка файлов
+
+Эндпоинты, принимающие файл, требуют `multipart/form-data`. Имя
+поля файла в форме — **`file`** (см. `$request->file('file')` в
+[`ArticleController`](src/Http/Controllers/ArticleController.php:48)
+и [`TestController`](src/Http/Controllers/TestController.php:38)).
+
+| Эндпоинт | Поле формы | Допустимые расширения | Куда сохраняется |
+|---|---|---|---|
+| `POST /createarticle`, `POST /updatearticle` | `file` | `.docx` | [`articlesFolder/`](articlesFolder) |
+| `POST /createtest`, `POST /updatetest`, `POST /tests`, `POST /tests/{id}` | `file` | `.json` (валидный JSON-массив вопросов) | [`testsFolder/`](testsFolder) |
+
+Остальные поля передаются в той же `FormData` как обычные строки
+(`title`, `description`, `topic`, `topic_id`, `time_limit` и т.д.).
+
+Пример (JS):
+
+```js
+const fd = new FormData();
+fd.append('title', 'Подключение Bootstrap');
+fd.append('description', 'Краткое описание');
+fd.append('topic', '3');                 // topic_id
+fd.append('file', fileInput.files[0]);   // .docx
+await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
+```
+
+---
+
+## HTTP API
+
+Все маршруты — в [`config/routes.php`](config/routes.php:1).
+В таблицах ниже:
+
+- **Auth** — что фронт обязан передать. `—` = ничего, `user_id`
+  = передать поле `user_id` в теле, `admin` = по смыслу должно
+  быть доступно только админу (на бэке не проверяется).
+- **Body** — поля JSON / form-data (если не указано иначе —
+  `application/json`).
+- **Response.data** — что окажется в поле `data` в ответе.
+  Метаполя (`status`, `message`, `count` …) опущены для краткости.
+
+### Modules
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET  | `/modules`        | — | — | `Module[]` (см. ниже) + `count` |
+| GET  | `/modules/{id}`   | — | — | `Module`. `{id}` может быть `int` **или** `slug` (lowercase title) |
+| POST | `/createmodule`   | admin | `{ title, description }` или `{ form_data: { title, description } }` | `Module` |
+| POST | `/updatemodule`   | admin | `{ module_id, title, description }` (или `form_data`) | `Module` |
+| POST | `/deletemodule`   | admin | `{ module_id }` | `{ id, title }` |
+
+`Module`:
+```json
+{ "id": 1, "title": "Bootstrap", "slug": "bootstrap", "description": "..." }
+```
+
+Валидация ([`ModuleValidator`](src/Validators/ModuleValidator.php:1)):
+`title` — обязательно, ≤ 20 символов; `description` — обязательно.
+
+### Topics
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET  | `/topics`        | — | — | `Topic[]` + `count` |
+| GET  | `/topics/{id}`   | — | — | `Topic[]` тем выбранного **module_id** + `count`. `{id}` — int или title модуля |
+| POST | `/createtopic`   | admin | `{ module_id, title, description }` (или `form_data`) | `Topic` |
+| POST | `/updatetopic`   | admin | `{ topic_id, module_id, title, description }` | `Topic` |
+| POST | `/deletetopic`   | admin | `{ topic_id }` | `{ id, title }` |
+
+`Topic`:
+```json
+{
+  "id": 3,
+  "module_id": 1,
+  "title": "Подключение",
+  "description": "...",
+  "module_title": "Bootstrap"
+}
+```
+
+### Articles
+
+> Внимательно: `/articles/{id}` — это статьи **по `topic_id`**;
+> одиночная статья — `/article/{id}` (единственное число).
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET  | `/articles`         | — | — | `Article[]` + `count` |
+| GET  | `/articles/{id}`    | — | — | `Article[]` для `topic_id = {id}` + `count` |
+| GET  | `/article/{id}`     | — | — | `Article` |
+| POST | `/createarticle`    | admin | **multipart**: `title`, `description`, `topic` (он же `topic_id`), `file` (.docx) | `Article` |
+| POST | `/updatearticle`    | admin | **multipart**: `article_id`, `title`, `description`, `topic`, `file?` (если меняем) | `Article` |
+| POST | `/deletearticle`    | admin | `{ article_id }` | `{ id, title }` (плюс кастомное `message` про удаление файла) |
+
+`Article`:
+```json
+{
+  "id": 5,
+  "title": "Подключение Bootstrap",
+  "description": "...",
+  "module_title": "Bootstrap",
+  "topic_id": 3,
+  "topic_title": "Подключение",
+  "test_id": 2,
+  "test_title": "Тест по подключению",
+  "task_id": null,
+  "task_title": null,
+  "file_path": "bootstrap_connect.docx",
+  "created_at": "2025-01-10 14:22:00"
+}
+```
+
+### Article File / Read progress
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET  | `/articlefile/{id}`              | — | — | строка с **HTML** (конвертация .docx) |
+| GET  | `/readarticle/{id}/{user_id}`    | user_id (в URL) | — | `{ id, user_id, article_id, is_read, ... }` (HTTP 201, если запись только что создалась) |
+| POST | `/readarticle`                   | user_id | `{ article_id, user_id }` | та же запись с `is_read = 1` |
+
+### Tests
+
+> У `/tests/{id}` исторически дублирующие маршруты. Используйте
+> любые, удобные фронту:
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET    | `/tests`           | — | — | `Test[]` + `count` |
+| GET    | `/tests/{id}`      | — | — | `Test` |
+| POST   | `/createtest` **или** `/tests` | admin | **multipart**: `title`, `description?`, `time_limit?` (default `20`), `topic_id?`, `file` (.json) | `{ id, title, question_count, file_path }` (HTTP 201) |
+| POST   | `/updatetest` **или** `/updatetest/{id}` **или** `/tests/{id}` | admin | **multipart**: `test_id` (если не в URL), `title`, `description`, `time_limit`, `file?` | сырое DB-row теста |
+| DELETE | `/tests/{id}`      | admin | — | `{ id, title }` |
+
+`Test`:
+```json
+{
+  "id": 2,
+  "title": "Тест по подключению",
+  "description": "...",
+  "time_limit": 20,
+  "question_count": 4,
+  "file_path": "bootstrap_connect",
+  "article_title": "Подключение Bootstrap",
+  "module_title": "Bootstrap"
+}
+```
+
+### Test File / Results / Passed
+
+Файл теста — JSON-массив вопросов, формат см.
+[`testsFolder/bootstrap_connect.json`](testsFolder/bootstrap_connect.json:1):
+
+```json
+[
+  {
+    "id": 1,
+    "question": "Как подключить Bootstrap?",
+    "answers": ["npm install bootstrap", "..."],
+    "correctAnswer": "npm install bootstrap"
+  }
+]
+```
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| POST | `/gettestfile`    | — | `{ test_id, question_id? }` | массив вопросов **без** `correctAnswer`; если передан `question_id` — один вопрос или `null` |
+| POST | `/gettestresults` | — | `{ test_id, user_answers: [{ questionId, answer }, ...] }` | число правильных ответов (`int`) |
+| POST | `/setpassedtest`  | user_id | `{ user_id, test_id }` | `bool` (true = тест помечен пройденным) |
+| POST | `/getpassedtest`  | user_id | `{ user_id, test_id }` | `bool` (true = пройден) |
+
+### Tasks
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| GET  | `/tasks`        | — | — | `data: Task[]` + `count` |
+| GET  | `/tasks/{id}`   | — | — | `data: Task` |
+| POST | `/checktask`    | user_id (опц.) | `{ taskId, code, user_id? }` | **legacy:** `{ success: bool, message: string }` (без `status/data`) |
+
+`Task` (joined):
+```json
+{
+  "id": 1,
+  "title": "...",
+  "description": "...",
+  "topic_id": 3,
+  "topic_title": "Подключение",
+  "module_title": "Bootstrap"
+  // плюс прочие поля таблицы tasks
+}
+```
+
+Ограничения `/checktask`: пустой код или > 5000 символов → 422.
+Сейчас проверка — **заглушка** (баланс фигурных скобок + мок-ответ),
+интеграция с ИИ — TODO в [`TaskService`](src/Services/TaskService.php:65).
+
+### Favorites
+
+`favorite_type` — `"article"` или `"test"`.
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| POST | `/getfavorite`  | user_id | `{ user_id, favorite_type }` | `data: row[]` из `user_article_favorite` или `user_test_favorite` + `count` |
+| POST | `/setfavorite`  | user_id | `{ user_id, favorite_id, favorite_type }` | `data: null`, `message` сообщает «добавлено / удалено» (toggle) |
+
+### Auth
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| POST | `/register`   | — | `{ username, password, confirm_password }` | `{ user_id, username, created_at }` (HTTP 201) |
+| POST | `/login`      | — | `{ username, password }` | `{ user_id, username, created_at }` |
+| POST | `/adminlogin` | — | `{ username, password }` | `{ user_id, username }` |
+
+Валидация ([`UserValidator`](src/Validators/UserValidator.php:1)):
+- `username` — 3..20 символов;
+- `password` — ≥ 3 символа;
+- `register`: `password === confirm_password`, иначе 422;
+- занятый `username` → 409 (`ConflictException`).
+
+---
 
 ## Структура проекта
 
@@ -64,20 +428,6 @@ articlesFolder/               — загруженные .docx статей
 testsFolder/                  — JSON-файлы тестов
 ```
 
-## Маршруты
-
-Все маршруты описаны декларативно в [`config/routes.php`](config/routes.php:1).
-Файл подключается из [`Application::bootstrap()`](src/Core/Application.php:31)
-с переменной `$router` в области видимости.
-
-Пример:
-
-```php
-$router->get('/modules',       [ModuleController::class, 'index']);
-$router->get('/modules/{id}',  [ModuleController::class, 'show']);
-$router->post('/createmodule', [ModuleController::class, 'create']);
-```
-
 ## Как добавить новую сущность
 
 Цепочка: **Model → Repository → Service → Controller → Route**.
@@ -100,16 +450,3 @@ DI-контейнер ([`Container`](src/Core/Container.php:1)) автомати
 резолвит зависимости по type-hint'ам в конструкторе — отдельные
 биндинги нужны только для не-классовых параметров (см. пример
 `DocxConverter` в [`Application::bootstrap()`](src/Core/Application.php:31)).
-
-## Обработка ошибок
-
-[`Application::handleException()`](src/Core/Application.php:70)
-ловит исключения и отдаёт JSON в формате
-`{status: false, message: ..., errors?: ...}` с соответствующим
-HTTP-статусом:
-
-- [`ValidationException`](src/Exceptions/ValidationException.php:1) — 422 + `errors`
-- [`NotFoundException`](src/Exceptions/NotFoundException.php:1) — 404
-- [`UnauthorizedException`](src/Exceptions/UnauthorizedException.php:1) — 401
-- [`ConflictException`](src/Exceptions/ConflictException.php:1) — 409
-- любая другая `Throwable` — 500 (с записью в лог)
