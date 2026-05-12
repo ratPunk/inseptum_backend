@@ -1,4 +1,8 @@
 RewriteEngine On
+
+# Forward all requests that aren't real files/dirs to the front controller in public/.
+# We pass the matched path as ?url=... so the app works under any subdirectory
+# (e.g. http://localhost/inseptum_backend/...) without extra base-path config.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+RewriteRule ^(.*)$ public/index.php?url=$1 [QSA,L]
