@@ -24,7 +24,13 @@ class FavoriteController extends AbstractController
         $userId = (int)$request->input('user_id', 0);
         $type   = (string)$request->input('favorite_type', '');
         $result = $this->service->list($type, $userId);
-        $message = $type === 'article' ? 'Статьи найдены' : 'tests найдены';
+        if ($type === 'article') {
+            $message = 'Статьи найдены';
+        } elseif ($type === 'task') {
+            $message = 'Задачи найдены';
+        } else {
+            $message = 'Тесты найдены';
+        }
         return $this->success($result['data'], $message, 200, ['count' => $result['count']]);
     }
 
@@ -40,6 +46,8 @@ class FavoriteController extends AbstractController
 
         if ($type === 'article') {
             $msg = $result['added'] ? 'Статья добавлена в избранное' : 'Статья удалена из избранного';
+        } elseif ($type === 'task') {
+            $msg = $result['added'] ? 'Задача добавлена в избранное' : 'Задача удалена из избранного';
         } else {
             $msg = $result['added'] ? 'Тест добавлен в избранное' : 'Тест удален из избранного';
         }

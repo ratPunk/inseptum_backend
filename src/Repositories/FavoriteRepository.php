@@ -10,6 +10,7 @@ class FavoriteRepository extends AbstractRepository
     private const TABLES = [
         'article' => ['table' => 'user_article_favorite', 'column' => 'article_id'],
         'test'    => ['table' => 'user_test_favorite',    'column' => 'test_id'],
+        'task'    => ['table' => 'user_task_favorite',    'column' => 'task_id'],
     ];
 
     private function meta(string $type): array

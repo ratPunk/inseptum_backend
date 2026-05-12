@@ -20,7 +20,13 @@ class FavoriteService
     {
         $rows = $this->repo->listByUser($type, $userId);
         if (empty($rows)) {
-            $entity = $type === 'article' ? 'Статьи' : 'tests';
+            if ($type === 'article') {
+                $entity = 'Статьи';
+            } elseif ($type === 'task') {
+                $entity = 'Задачи';
+            } else {
+                $entity = 'Тесты';
+            }
             throw new NotFoundException($entity . ' не найдены');
         }
         return ['data' => $rows, 'count' => count($rows)];

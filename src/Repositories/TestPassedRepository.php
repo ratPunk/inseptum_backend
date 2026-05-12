@@ -15,6 +15,19 @@ class TestPassedRepository extends AbstractRepository
         );
     }
 
+    /**
+     * Все записи о тестах пользователя.
+     * @param bool $onlyPassed Если true — только реально пройденные (is_passed = 1).
+     */
+    public function listByUser(int $userId, bool $onlyPassed = true): array
+    {
+        $sql = 'SELECT * FROM `user_test_passed` WHERE user_id = :uid';
+        if ($onlyPassed) {
+            $sql .= ' AND is_passed = 1';
+        }
+        return $this->db->fetchAll($sql, ['uid' => $userId]);
+    }
+
     public function markPassed(int $userId, int $testId): array
     {
         $existing = $this->findOne($userId, $testId);

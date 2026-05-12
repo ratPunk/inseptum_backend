@@ -62,11 +62,18 @@ $router->post('/gettestfile',      [TestController::class, 'file']);
 $router->post('/gettestresults',   [TestController::class, 'results']);
 $router->post('/setpassedtest',    [TestController::class, 'setPassed']);
 $router->post('/getpassedtest',    [TestController::class, 'getPassed']);
+// Batch: список ID всех пройденных тестов пользователя.
+$router->post('/getpassedtests',   [TestController::class, 'getPassedList']);
 
 // ---------- Tasks ----------
 $router->get('/tasks',             [TaskController::class, 'index']);
 $router->get('/tasks/{id}',        [TaskController::class, 'show']);
 $router->post('/checktask',        [TaskController::class, 'check']);
+// Прохождение задач:
+$router->post('/setpassedtask',    [TaskController::class, 'setPassed']);
+$router->post('/getpassedtask',    [TaskController::class, 'getPassed']);
+// Batch: список ID всех пройденных задач пользователя.
+$router->post('/getpassedtasks',   [TaskController::class, 'getPassedList']);
 
 // ---------- Favorites ----------
 $router->post('/getfavorite',      [FavoriteController::class, 'index']);

@@ -54,6 +54,9 @@ PHP backend для проекта *inseptum*. Чистая MVC-подобная 
    `http://localhost/inseptum_backend/...`).
 
 4. Импортируйте дамп БД из [`inseptum.sql`](inseptum.sql:1).
+   Для уже существующих БД отдельно прогоните миграции из папки
+   [`migrations/`](migrations:1) (все скрипты идемпотентны —
+   `CREATE TABLE IF NOT EXISTS`).
 
 5. Проверка:
 
@@ -346,14 +349,18 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 | POST | `/gettestresults` | — | `{ test_id, user_answers: [{ questionId, answer }, ...] }` | число правильных ответов (`int`) |
 | POST | `/setpassedtest`  | user_id | `{ user_id, test_id }` | `bool` (true = тест помечен пройденным) |
 | POST | `/getpassedtest`  | user_id | `{ user_id, test_id }` | `bool` (true = пройден) |
+| POST | `/getpassedtests` | user_id | `{ user_id }` | `int[]` — массив `test_id` всех пройденных тестов пользователя (**batch**, замена N запросов `/getpassedtest`); + `count` |
 
 ### Tasks
 
 | Method | Path | Auth | Body | Response |
 |---|---|---|---|---|
-| GET  | `/tasks`        | — | — | `data: Task[]` + `count` |
-| GET  | `/tasks/{id}`   | — | — | `data: Task` |
-| POST | `/checktask`    | user_id (опц.) | `{ taskId, code, user_id? }` | **legacy:** `{ success: bool, message: string }` (без `status/data`) |
+| GET  | `/tasks`           | — | — | `data: Task[]` + `count` |
+| GET  | `/tasks/{id}`      | — | — | `data: Task` |
+| POST | `/checktask`       | user_id (опц.) | `{ taskId, code, user_id? }` | **legacy:** `{ success: bool, message: string }` (без `status/data`). При успехе и переданном `user_id` задача **автоматически** отмечается пройденной. |
+| POST | `/setpassedtask`   | user_id | `{ user_id, task_id }` | `data: bool` (true = задача помечена пройденной) |
+| POST | `/getpassedtask`   | user_id | `{ user_id, task_id }` | `data: bool` (true = пройдена) |
+| POST | `/getpassedtasks`  | user_id | `{ user_id }` | `data: int[]` — массив `task_id` всех пройденных задач пользователя (**batch**); + `count` |
 
 `Task` (joined):
 ```json
@@ -374,11 +381,11 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 
 ### Favorites
 
-`favorite_type` — `"article"` или `"test"`.
+`favorite_type` — `"article"`, `"test"` или `"task"`.
 
 | Method | Path | Auth | Body | Response |
 |---|---|---|---|---|
-| POST | `/getfavorite`  | user_id | `{ user_id, favorite_type }` | `data: row[]` из `user_article_favorite` или `user_test_favorite` + `count` |
+| POST | `/getfavorite`  | user_id | `{ user_id, favorite_type }` | `data: row[]` из `user_article_favorite` / `user_test_favorite` / `user_task_favorite` + `count` |
 | POST | `/setfavorite`  | user_id | `{ user_id, favorite_id, favorite_type }` | `data: null`, `message` сообщает «добавлено / удалено» (toggle) |
 
 ### Auth

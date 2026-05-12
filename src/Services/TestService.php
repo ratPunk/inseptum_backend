@@ -130,6 +130,21 @@ class TestService
         return $row !== null && (int)$row['is_passed'] === 1;
     }
 
+    /**
+     * Список ID пройденных тестов пользователя (batch для фронта).
+     *
+     * @return array{data: int[], count: int}
+     */
+    public function listPassedByUser(int $userId): array
+    {
+        if ($userId <= 0) {
+            throw new ValidationException('Не указан user_id');
+        }
+        $rows = $this->passedRepo->listByUser($userId, true);
+        $ids = array_map(static fn(array $r) => (int)$r['test_id'], $rows);
+        return ['data' => $ids, 'count' => count($ids)];
+    }
+
     public function listAll(): array
     {
         $tests = $this->repo->findAll();

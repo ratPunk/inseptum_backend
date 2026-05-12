@@ -116,4 +116,15 @@ class TestController extends AbstractController
         $passed = $this->service->isPassed($userId, $testId);
         return $this->success($passed, $passed ? 'Тест пройден' : 'Тест не пройден', 200);
     }
+
+    /**
+     * POST /getpassedtests — список ID всех пройденных тестов пользователя.
+     * Batch-эндпоинт, чтобы избежать N запросов с фронта.
+     */
+    public function getPassedList(Request $request, array $params): JsonResponse
+    {
+        $userId = (int)$request->input('user_id', 0);
+        $result = $this->service->listPassedByUser($userId);
+        return $this->success($result['data'], 'Пройденные тесты получены', 200, ['count' => $result['count']]);
+    }
 }

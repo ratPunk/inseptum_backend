@@ -44,4 +44,36 @@ class TaskController extends AbstractController
         // Отдаём в legacy-формате — не оборачиваем в success/data.
         return new JsonResponse($payload, 200);
     }
+
+    /**
+     * POST /setpassedtask — отметить задачу как пройденную.
+     */
+    public function setPassed(Request $request, array $params): JsonResponse
+    {
+        $userId = (int)$request->input('user_id', 0);
+        $taskId = (int)$request->input('task_id', 0);
+        $passed = $this->service->markPassed($userId, $taskId);
+        return $this->success($passed, $passed ? 'Задача пройдена' : 'Статус задачи обновлен', 200);
+    }
+
+    /**
+     * POST /getpassedtask — получить статус прохождения одной задачи.
+     */
+    public function getPassed(Request $request, array $params): JsonResponse
+    {
+        $userId = (int)$request->input('user_id', 0);
+        $taskId = (int)$request->input('task_id', 0);
+        $passed = $this->service->isPassed($userId, $taskId);
+        return $this->success($passed, $passed ? 'Задача пройдена' : 'Задача не пройдена', 200);
+    }
+
+    /**
+     * POST /getpassedtasks — список ID пройденных задач пользователя (batch).
+     */
+    public function getPassedList(Request $request, array $params): JsonResponse
+    {
+        $userId = (int)$request->input('user_id', 0);
+        $result = $this->service->listPassedByUser($userId);
+        return $this->success($result['data'], 'Пройденные задачи получены', 200, ['count' => $result['count']]);
+    }
 }
