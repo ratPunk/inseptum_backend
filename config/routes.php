@@ -12,9 +12,21 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ModuleTypeController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\TopicController;
+
+// ---------- Module Types ----------
+$router->get('/module-types',           [ModuleTypeController::class, 'index']);
+$router->get('/module-types/{id}',      [ModuleTypeController::class, 'show']);
+$router->post('/createmoduletype',      [ModuleTypeController::class, 'create']);
+$router->post('/updatemoduletype',      [ModuleTypeController::class, 'update']);
+$router->post('/updatemoduletype/{id}', [ModuleTypeController::class, 'update']);
+$router->put('/updatemoduletype/{id}',  [ModuleTypeController::class, 'update']);
+$router->post('/deletemoduletype',      [ModuleTypeController::class, 'delete']);
+$router->post('/deletemoduletype/{id}', [ModuleTypeController::class, 'delete']);
+$router->delete('/deletemoduletype/{id}', [ModuleTypeController::class, 'delete']);
 
 // ---------- Modules ----------
 $router->get('/modules',           [ModuleController::class, 'index']);

@@ -9,6 +9,8 @@ class Article
     public ?string $title;
     public ?string $description;
     public ?string $module_title;
+    /** @var array<string,mixed>|null */
+    public ?array $module_type;
     public ?int $topic_id;
     public ?string $topic_title;
     public ?int $test_id;
@@ -25,6 +27,7 @@ class Article
         $a->title        = isset($row['title']) ? (string)$row['title'] : null;
         $a->description  = isset($row['description']) ? (string)$row['description'] : null;
         $a->module_title = isset($row['module_title']) ? (string)$row['module_title'] : null;
+        $a->module_type  = ModuleType::embeddedFromPrefixedRow($row);
         $a->topic_id     = isset($row['topic_id']) ? (int)$row['topic_id'] : null;
         $a->topic_title  = isset($row['topic_title']) ? (string)$row['topic_title'] : null;
         $a->test_id      = isset($row['test_id']) && $row['test_id'] !== null ? (int)$row['test_id'] : null;
@@ -43,6 +46,7 @@ class Article
             'title'        => $this->title,
             'description'  => $this->description,
             'module_title' => $this->module_title,
+            'module_type'  => $this->module_type,
             'topic_id'     => $this->topic_id,
             'topic_title'  => $this->topic_title,
             'test_id'      => $this->test_id,

@@ -12,11 +12,18 @@ class TestRepository extends AbstractRepository
     private const SELECT = "SELECT
             tests.*,
             articles.title AS article_title,
-            modules.title AS module_title
+            modules.title  AS module_title,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color
         FROM tests
-        LEFT JOIN articles ON tests.id = articles.test_id
-        LEFT JOIN topics ON articles.topic_id = topics.id
-        LEFT JOIN modules ON topics.module_id = modules.id";
+        LEFT JOIN articles     ON tests.id              = articles.test_id
+        LEFT JOIN topics       ON articles.topic_id     = topics.id
+        LEFT JOIN modules      ON topics.module_id      = modules.id
+        LEFT JOIN module_types ON modules.module_type_id = module_types.id";
 
     /** @return Test[] */
     public function findAll(): array

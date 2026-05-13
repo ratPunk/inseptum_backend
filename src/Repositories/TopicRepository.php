@@ -9,8 +9,18 @@ class TopicRepository extends AbstractRepository
 {
     protected string $table = 'topics';
 
-    private const SELECT_WITH_MODULE = "SELECT topics.*, modules.title AS module_title
-        FROM topics LEFT JOIN modules ON topics.module_id = modules.id";
+    private const SELECT_WITH_MODULE = "SELECT
+            topics.*,
+            modules.title AS module_title,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color
+        FROM topics
+        LEFT JOIN modules      ON topics.module_id     = modules.id
+        LEFT JOIN module_types ON modules.module_type_id = module_types.id";
 
     /** @return Topic[] */
     public function findAll(): array

@@ -21,6 +21,7 @@ PHP backend для проекта *inseptum*. Чистая MVC-подобная 
 - [Авторизация](#авторизация)
 - [Загрузка файлов](#загрузка-файлов)
 - [HTTP API](#http-api)
+  - [Module Types](#module-types)
   - [Modules](#modules)
   - [Topics](#topics)
   - [Articles](#articles)
@@ -221,23 +222,71 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 - **Response.data** — что окажется в поле `data` в ответе.
   Метаполя (`status`, `message`, `count` …) опущены для краткости.
 
+### Module Types
+
+Справочник типов модулей. Используется фронтом для подбора иконки
+(`icon` → ключ react-icons) и языка подсветки синтаксиса
+(`highlight_language` → язык в редакторе задач).
+
+| Method | Path | Auth | Body | Response.data |
+|---|---|---|---|---|
+| GET    | `/module-types`              | —     | — | `ModuleType[]` + `count` |
+| GET    | `/module-types/{id}`         | —     | — | `ModuleType`. `{id}` — `int` или `slug` |
+| POST   | `/createmoduletype`          | admin | `{ slug, name, icon, highlight_language?, color? }` (или `form_data`) | `ModuleType` |
+| POST/PUT | `/updatemoduletype/{id}`   | admin | те же поля | `ModuleType` |
+| POST/DELETE | `/deletemoduletype/{id}`| admin | — | `{ id, slug }`. **409** если есть привязанные модули |
+
+`ModuleType`:
+```json
+{
+  "id": 1,
+  "slug": "bootstrap",
+  "name": "Bootstrap",
+  "icon": "FaBootstrap",
+  "highlight_language": "css",
+  "color": "#7952B3",
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
+
+Валидация ([`ModuleTypeValidator`](src/Validators/ModuleTypeValidator.php:1)):
+`slug` — обязателен, уникален, `^[a-z0-9_-]+$`, ≤ 64;
+`name` — обязателен, ≤ 100; `icon` — обязательна, ≤ 80;
+`highlight_language` — опционально, ≤ 40; `color` — опционально, ≤ 20.
+
 ### Modules
 
 | Method | Path | Auth | Body | Response.data |
 |---|---|---|---|---|
 | GET  | `/modules`        | — | — | `Module[]` (см. ниже) + `count` |
 | GET  | `/modules/{id}`   | — | — | `Module`. `{id}` может быть `int` **или** `slug` (lowercase title) |
-| POST | `/createmodule`   | admin | `{ title, description }` или `{ form_data: { title, description } }` | `Module` |
-| POST | `/updatemodule`   | admin | `{ module_id, title, description }` (или `form_data`) | `Module` |
+| POST | `/createmodule`   | admin | `{ title, description, module_type_id }` или `{ form_data: { ... } }` | `Module` |
+| POST | `/updatemodule`   | admin | `{ module_id, title, description, module_type_id }` (или `form_data`) | `Module` |
 | POST | `/deletemodule`   | admin | `{ module_id }` | `{ id, title }` |
 
 `Module`:
 ```json
-{ "id": 1, "title": "Bootstrap", "slug": "bootstrap", "description": "..." }
+{
+  "id": 1,
+  "title": "Bootstrap",
+  "slug": "bootstrap",
+  "description": "...",
+  "module_type_id": 1,
+  "module_type": {
+    "id": 1,
+    "slug": "bootstrap",
+    "name": "Bootstrap",
+    "icon": "FaBootstrap",
+    "highlight_language": "css",
+    "color": "#7952B3"
+  }
+}
 ```
 
 Валидация ([`ModuleValidator`](src/Validators/ModuleValidator.php:1)):
-`title` — обязательно, ≤ 20 символов; `description` — обязательно.
+`title` — обязательно, ≤ 20 символов; `description` — обязательно;
+`module_type_id` — обязательное целое, существующий ID в `module_types`.
 
 ### Topics
 
@@ -256,9 +305,21 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
   "module_id": 1,
   "title": "Подключение",
   "description": "...",
-  "module_title": "Bootstrap"
+  "module_title": "Bootstrap",
+  "module_type": {
+    "id": 1,
+    "slug": "bootstrap",
+    "name": "Bootstrap",
+    "icon": "FaBootstrap",
+    "highlight_language": "css",
+    "color": "#7952B3"
+  }
 }
 ```
+
+> Поле `module_type` добавлено также в ответы `Article`, `Task` и `Test`
+> везде, где раньше присутствовало `module_title`. `module_title`
+> сохранено для обратной совместимости.
 
 ### Articles
 

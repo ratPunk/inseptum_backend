@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost:3306
--- Время создания: Фев 24 2026 г., 06:42
+-- Время создания: Май 13 2026 г., 05:58
 -- Версия сервера: 5.7.24
 -- Версия PHP: 8.3.1
 
@@ -20,6 +20,26 @@ SET time_zone = "+00:00";
 --
 -- База данных: `inseptum`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `admins`
+--
+
+CREATE TABLE `admins` (
+  `id` int(11) NOT NULL,
+  `username` varchar(20) NOT NULL,
+  `password` varchar(150) NOT NULL,
+  `role` enum('admin','moderator','spectator') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `admins`
+--
+
+INSERT INTO `admins` (`id`, `username`, `password`, `role`) VALUES
+(1, 'admin', '2b\n10\n10N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');
 
 -- --------------------------------------------------------
 
@@ -43,7 +63,9 @@ CREATE TABLE `articles` (
 --
 
 INSERT INTO `articles` (`id`, `topic_id`, `title`, `description`, `file_path`, `created_at`, `test_id`, `task_id`) VALUES
-(1, 2, 'Как работать с bootstrap', 'Статья с основами подключения bootstrap в ваш проект', 'bootstrap_connect.docx', '2026-02-13 17:41:15', NULL, NULL);
+(1, 2, 'Как работать с bootstrap', 'Статья с основами подключения bootstrap в ваш проект', 'bootstrap_connect.docx', '2026-02-13 17:41:15', 1, 1),
+(2, 2, 'атрибуты bootstrapз', 'атрибуты bootstrap', 'bootstrap_connect — копия.docx', '2026-02-28 21:00:00', NULL, NULL),
+(3, 16, 'dasdsd', 'dasdasd', 'bootstrap_connect — копия.docx', '2026-04-02 09:56:33', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -54,20 +76,51 @@ INSERT INTO `articles` (`id`, `topic_id`, `title`, `description`, `file_path`, `
 CREATE TABLE `modules` (
   `id` int(11) NOT NULL,
   `title` varchar(20) NOT NULL,
-  `description` text NOT NULL
+  `description` text NOT NULL,
+  `module_type_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Дамп данных таблицы `modules`
 --
 
-INSERT INTO `modules` (`id`, `title`, `description`) VALUES
-(1, 'Bootstrap', 'Материалы по Bootstrap: применение, компоненты и адаптивная верстка'),
-(2, 'Javascript', 'Материалы по JavaScript: основы, фреймворки и современные практики'),
-(3, 'HTML', 'Материалы по HTML: семантическая верстка и современные стандарты'),
-(4, 'PHP', 'Материалы по PHP: серверное программирование и фреймворки'),
-(5, 'Database', 'Материалы по базам данных: SQL, проектирование и оптимизация'),
-(6, 'Structure', 'Материалы по структурам данных и алгоритмам');
+INSERT INTO `modules` (`id`, `title`, `description`, `module_type_id`) VALUES
+(1, 'Bootstrap', 'Материалы по Bootstrap: применение, компоненты и адаптивная верстка', 1),
+(2, 'Javascript', 'Материалы по JavaScript: основы, фреймворки и современные практики', 4),
+(3, 'HTML', 'Материалы по HTML: семантическая верстка и современные стандарты', 2),
+(4, 'PHP', 'Материалы по PHP: серверное программирование и фреймворки', 3),
+(5, 'Database', 'Материалы по базам данных: SQL, проектирование и оптимизация', 5),
+(6, 'Structure', 'Материалы по структурам данных и алгоритмам', 6),
+(7, 'Git', 'Основа управления технологией контроля версий', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `module_types`
+--
+
+CREATE TABLE `module_types` (
+  `id` int(11) NOT NULL,
+  `slug` varchar(64) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `icon` varchar(80) NOT NULL,
+  `highlight_language` varchar(40) DEFAULT NULL,
+  `color` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Дамп данных таблицы `module_types`
+--
+
+INSERT INTO `module_types` (`id`, `slug`, `name`, `icon`, `highlight_language`, `color`, `created_at`, `updated_at`) VALUES
+(1, 'bootstrap', 'Bootstrap', 'FaBootstrap', 'css', '#7952B3', '2026-05-12 23:04:23', '2026-05-12 23:04:23'),
+(2, 'html', 'HTML', 'FaHtml5', 'html', '#E34F26', '2026-05-12 23:04:23', '2026-05-12 23:04:23'),
+(3, 'php', 'PHP', 'FaPhp', 'php', '#777BB4', '2026-05-12 23:04:23', '2026-05-12 23:04:23'),
+(4, 'javascript', 'JavaScript', 'FaJs', 'javascript', '#F7DF1E', '2026-05-12 23:04:23', '2026-05-12 23:04:23'),
+(5, 'database', '╨С╨░╨╖╤Л ╨┤╨░╨╜╨╜╤Л╤Е', 'FaDatabase', 'sql', '#00758F', '2026-05-12 23:04:23', '2026-05-12 23:04:23'),
+(6, 'structure', '╨б╤В╤А╤Г╨║╤В╤Г╤А╤Л ╨┤╨░╨╜╨╜╤Л╤Е', 'TbBinaryTree', 'javascript', '#4CAF50', '2026-05-12 23:04:23', '2026-05-12 23:04:23');
 
 -- --------------------------------------------------------
 
@@ -77,9 +130,19 @@ INSERT INTO `modules` (`id`, `title`, `description`) VALUES
 
 CREATE TABLE `tasks` (
   `id` int(11) NOT NULL,
-  `title` varchar(40) NOT NULL,
-  `description` text NOT NULL
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `difficulty` enum('easy','medium','hard') DEFAULT 'medium',
+  `topic_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `tasks`
+--
+
+INSERT INTO `tasks` (`id`, `title`, `description`, `difficulty`, `topic_id`, `created_at`) VALUES
+(1, 'Задача на создание Bootstrap классов', 'Создайте bootstrap класс и используйте его', 'easy', 2, '2026-04-17 11:42:50');
 
 -- --------------------------------------------------------
 
@@ -91,101 +154,19 @@ CREATE TABLE `tests` (
   `id` int(11) NOT NULL,
   `title` varchar(40) NOT NULL,
   `description` text NOT NULL,
-  `file_path` varchar(140) NOT NULL
+  `file_path` varchar(140) NOT NULL,
+  `time_limit` int(4) NOT NULL DEFAULT '20',
+  `question_count` int(5) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- --------------------------------------------------------
+--
+-- Дамп данных таблицы `tests`
+--
 
---
--- Структура таблицы `user_article_favorite`
---
-CREATE TABLE IF NOT EXISTS `user_article_favorite` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `article_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_article` (`user_id`,`article_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_article_id` (`article_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Структура таблицы `user_test_favorite`
---
-CREATE TABLE IF NOT EXISTS `user_test_favorite` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `test_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_test` (`user_id`,`test_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_test_id` (`test_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Структура таблицы `user_task_favorite`
---
-CREATE TABLE IF NOT EXISTS `user_task_favorite` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `task_id` int(11) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_task` (`user_id`,`task_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_task_id` (`task_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Структура таблицы `user_test_passed`
---
-CREATE TABLE IF NOT EXISTS `user_test_passed` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `test_id` int(11) NOT NULL,
-  `is_passed` tinyint(1) NOT NULL DEFAULT 0,
-  `passed_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_test` (`user_id`,`test_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_test_id` (`test_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Структура таблицы `user_task_passed`
---
-CREATE TABLE IF NOT EXISTS `user_task_passed` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `task_id` int(11) NOT NULL,
-  `is_passed` tinyint(1) NOT NULL DEFAULT 0,
-  `passed_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_task` (`user_id`,`task_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_task_id` (`task_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Структура таблицы `user_article_read`
---
-CREATE TABLE IF NOT EXISTS `user_article_read` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `article_id` int(11) NOT NULL,
-  `is_read` tinyint(1) NOT NULL DEFAULT 0,
-  `read_at` timestamp NULL DEFAULT NULL,
-  `progress_percent` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_user_article` (`user_id`,`article_id`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_article_id` (`article_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO `tests` (`id`, `title`, `description`, `file_path`, `time_limit`, `question_count`, `created_at`) VALUES
+(1, 'Основы Bootstrap', 'Тест по теме Основы Bootstrap раскрывающий и дополняющий данную тему', 'bootstrap_connect', 20, 4, '2026-03-01 20:58:26'),
+(5, 'da', 'dsa', '1775152339_bootstrap_connect — копия', 12, 4, '2026-04-02 17:52:19');
 
 -- --------------------------------------------------------
 
@@ -207,7 +188,6 @@ CREATE TABLE `topics` (
 INSERT INTO `topics` (`id`, `module_id`, `title`, `description`) VALUES
 (1, 3, 'Структура страницы', 'Основы структуры страницы, базовое понимание для начала создания своей страницы.'),
 (2, 1, 'Bootstrap основы', 'Основы для понимания взаимодействия'),
-(3, 1, 'Сетка и адаптивность', 'Изучение grid-системы, контейнеров и breakpoints'),
 (4, 1, 'Компоненты', 'Кнопки, карточки, модальные окна и навигация'),
 (5, 1, 'Кастомизация', 'Переопределение переменных и сборка кастомной темы'),
 (6, 2, 'Основы языка', 'Переменные, типы данных, функции и события'),
@@ -224,7 +204,57 @@ INSERT INTO `topics` (`id`, `module_id`, `title`, `description`) VALUES
 (17, 5, 'Оптимизация запросов', 'Индексы, EXPLAIN, скорость выполнения'),
 (18, 6, 'Массивы и списки', 'Статические массивы, связные списки'),
 (19, 6, 'Стеки и очереди', 'Принципы LIFO и FIFO, применение'),
-(20, 6, 'Деревья и графы', 'Бинарные деревья, обход графов');
+(20, 6, 'Деревья и графы', 'Бинарные деревья, обход графов'),
+(21, 1, 'Bootstrap ╨╛╤Б╨╜╨╛╨▓╤Л', '╨Ю╤Б╨╜╨╛╨▓╤Л ╨┤╨╗╤П ╨┐╨╛╨╜╨╕╨╝╨░╨╜╨╕╤П ╨▓╨╖╨░╨╕╨╝╨╛╨┤╨╡╨╣╤Б╤В╨▓╨╕╤П'),
+(22, 1, '╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨╕ ╨┐╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡', '╨Я╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╤З╨╡╤А╨╡╨╖ CDN, npm ╨╕ ╤Б╨▒╨╛╤А╨║╨╛╨╣ Sass'),
+(23, 1, '╨б╨╡╤В╨║╨░ ╨╕ ╨░╨┤╨░╨┐╤В╨╕╨▓╨╜╨╛╤Б╤В╤М', '╨Ш╨╖╤Г╤З╨╡╨╜╨╕╨╡ grid-╤Б╨╕╤Б╤В╨╡╨╝╤Л, ╨║╨╛╨╜╤В╨╡╨╣╨╜╨╡╤А╨╛╨▓ ╨╕ breakpoints'),
+(24, 1, '╨Ъ╨╛╨╜╤В╨╡╨╣╨╜╨╡╤А╤Л ╨╕ Flex-╤Г╤В╨╕╨╗╨╕╤В╤Л', '╨а╨░╨╖╨╜╨╕╤Ж╨░ container/container-fluid, ╤Г╤В╨╕╨╗╨╕╤В╤Л flex'),
+(25, 1, '╨Ъ╨╛╨╝╨┐╨╛╨╜╨╡╨╜╤В╤Л', '╨Ъ╨╜╨╛╨┐╨║╨╕, ╨║╨░╤А╤В╨╛╤З╨║╨╕, ╨╝╨╛╨┤╨░╨╗╤М╨╜╤Л╨╡ ╨╛╨║╨╜╨░ ╨╕ ╨╜╨░╨▓╨╕╨│╨░╤Ж╨╕╤П'),
+(26, 1, '╨д╨╛╤А╨╝╤Л ╨╕ ╨▓╨░╨╗╨╕╨┤╨░╤Ж╨╕╤П', '╨б╤В╨╕╨╗╨╕ input, was-validated, ╨┐╨╗╨░╨│╨╕╨╜╤Л ╨▓╨░╨╗╨╕╨┤╨░╤Ж╨╕╨╕'),
+(27, 1, '╨Э╨░╨▓╨╕╨│╨░╤Ж╨╕╤П ╨╕ Navbar', 'Navbar, Nav, Tabs, Pills ╨╕ off-canvas ╨╝╨╡╨╜╤О'),
+(28, 1, '╨Ь╨╛╨┤╨░╨╗╤М╨╜╤Л╨╡ ╨╛╨║╨╜╨░ ╨╕ ╤В╨╛╤Б╤В╤Л', '╨Ь╨╛╨┤╨░╨╗╨║╨╕, ╤В╨╛╤Б╤В╤Л, ╨╛╤Д╤Д╨║╨░╨╜╨▓╨░╤Б, ╨┐╨╛╨┐╨╛╨▓╨╡╤А╤Л'),
+(29, 1, '╨Ш╨║╨╛╨╜╨║╨╕ Bootstrap Icons', '╨Я╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╨╜╨╕╨╡ ╨╜╨░╨▒╨╛╤А╨░ ╨╕╨║╨╛╨╜╨╛╨║'),
+(30, 1, '╨Ъ╨░╤Б╤В╨╛╨╝╨╕╨╖╨░╤Ж╨╕╤П', '╨Я╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╤Е ╨╕ ╤Б╨▒╨╛╤А╨║╨░ ╨║╨░╤Б╤В╨╛╨╝╨╜╨╛╨╣ ╤В╨╡╨╝╤Л'),
+(31, 1, '╨в╨╡╨╝╨╕╨╖╨░╤Ж╨╕╤П ╨╕ Dark mode', '╨Я╨╛╨┤╨┤╨╡╤А╨╢╨║╨░ dark mode ╨╕ ╨║╨░╤Б╤В╨╛╨╝╨╜╤Л╤Е ╤В╨╡╨╝ ╤З╨╡╤А╨╡╨╖ Sass'),
+(36, 1, 'Установка и подключение', 'Подключение через CDN, npm и сборкой Sass'),
+(37, 1, 'Сетка и адаптивность', 'Изучение grid-системы, контейнеров и breakpoints'),
+(38, 1, 'Контейнеры и Flex-утилиты', 'Разница container/container-fluid, утилиты flex'),
+(39, 1, 'Формы и валидация', 'Стили input, was-validated, плагины валидации'),
+(40, 1, 'Навигация и Navbar', 'Navbar, Nav, Tabs, Pills и off-canvas меню'),
+(41, 1, 'Модальные окна и тосты', 'Модалки, тосты, оффканвас, поповеры'),
+(42, 1, 'Иконки Bootstrap Icons', 'Подключение и использование набора иконок'),
+(43, 1, 'Темизация и Dark mode', 'Поддержка dark mode и кастомных тем через Sass'),
+(51, 3, 'Текст и типографика', 'Заголовки, абзацы, списки, цитаты, выделения'),
+(52, 3, 'Ссылки и навигация', 'Виды ссылок, якоря, target, rel, навигационные паттерны'),
+(53, 3, 'Изображения и picture', 'img, srcset, sizes, picture, lazy-loading'),
+(54, 3, 'Таблицы', 'thead, tbody, tfoot, scope, объединение ячеек'),
+(55, 3, 'Метатеги и SEO', 'meta description, Open Graph, viewport, canonical'),
+(56, 3, 'Доступность (a11y)', 'aria-атрибуты, alt, контраст, фокус, клавиатурная навигация'),
+(57, 3, 'HTML5 API', 'localStorage, sessionStorage, History, Drag and Drop'),
+(58, 4, 'Типы данных и операторы', 'Скаляры, массивы, объекты, приведение типов'),
+(59, 4, 'Функции и области видимости', 'Объявление, аргументы, замыкания, тип-хинтинг'),
+(60, 4, 'Массивы и строки', 'Полезные функции работы с массивами и строками'),
+(61, 4, 'PDO и подготовленные запросы', 'Безопасная работа с БД через PDO'),
+(62, 4, 'Наследование и интерфейсы', 'Расширение классов, абстрактные классы, интерфейсы, трейты'),
+(63, 4, 'Обработка ошибок и исключения', 'try/catch, иерархия Throwable, кастомные исключения'),
+(64, 4, 'Composer и автозагрузка', 'composer.json, PSR-4, установка пакетов'),
+(65, 4, 'REST API на чистом PHP', 'Маршрутизация, JSON-ответы, статус-коды'),
+(73, 2, 'Операторы и управляющие конструкции', 'if/else, switch, циклы for/while, тернарный оператор'),
+(74, 2, 'Функции и замыкания', 'Объявление функций, стрелочные функции, scope, closure'),
+(75, 2, 'Массивы и объекты', 'map, filter, reduce, деструктуризация, spread'),
+(76, 2, 'События и делегирование', 'addEventListener, всплытие, делегирование, preventDefault'),
+(77, 2, 'Fetch и работа с API', 'GET/POST запросы, обработка ошибок, AbortController'),
+(78, 2, 'Модули ES', 'import/export, default vs named, динамический import'),
+(79, 2, 'Классы и ООП в JS', 'class, extends, super, статические методы'),
+(80, 2, 'Обработка ошибок', 'try/catch/finally, throw, ошибки в Promise'),
+(88, 6, 'Двусвязные и кольцевые списки', 'Реализация и операции вставки/удаления'),
+(89, 6, 'Дек и приоритетная очередь', 'Двусторонние очереди, heap-based priority queue'),
+(90, 6, 'Хеш-таблицы', 'Хеш-функции, коллизии, открытая/закрытая адресация'),
+(91, 6, 'Бинарные деревья поиска', 'BST, балансировка, операции'),
+(92, 6, 'Куча (Heap)', 'Min-heap, max-heap, сортировка кучей'),
+(93, 6, 'Графы: BFS и DFS', 'Поиск в ширину и в глубину, представления графа'),
+(94, 6, 'Сортировки', 'Bubble, Quick, Merge, Heap — анализ сложности'),
+(95, 6, 'Алгоритмическая сложность', 'Big O, оценка времени и памяти');
 
 -- --------------------------------------------------------
 
@@ -244,6 +274,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `password`, `created_at`) VALUES
+(1, 'test_user', '123', '2024-01-15 07:30:00'),
 (26, 'bob', '$2y$10$oRf4ymjpxtCTCU30iJNdHOf7le.lNykde54kS1RBk.GmKxDKcE4xy', '2026-02-09 07:37:20'),
 (27, 'bob1', '$2y$10$IRy7Nf5Dsh96sstCPZooEe/8.hafmtc46959T/jD9.kBtRNs7wuma', '2026-02-09 07:38:25'),
 (28, 'фв', '$2y$10$2vGZTQG77pSynCmwIs5kpOqg1pioJetqEnb3k2V1NWmcNYktRphS.', '2026-02-09 07:40:33'),
@@ -263,11 +294,112 @@ INSERT INTO `users` (`id`, `username`, `password`, `created_at`) VALUES
 (42, 'reere', '$2y$10$4.KR1OEPg1nq523q1g.bXuTln/ubkJ.vHNgkivVC7odXMKcbTUCEG', '2026-02-23 11:18:18'),
 (43, 'dasgegd', '$2y$10$gOcrY.S84ljukZOvJcgPJOw/SpFusJRjoCMr1fwhigoujX9wEATr2', '2026-02-23 11:46:14'),
 (44, 'qwergdbnjyuhgfrjkuyt', '$2y$10$92Sg.IWMIn1b/14CQjW6qOxV6.bJlzFXic3MsAu8ck20itHEfOXsu', '2026-02-23 11:56:11'),
-(45, 'рыфаыафы', '$2y$10$.R7.xgWJfX3E/.cjFVpZ5O7nPNj4YITZHUGWgpx7ic3ZnFn4pEUmy', '2026-02-23 20:17:04');
+(45, 'рыфаыафы', '$2y$10$.R7.xgWJfX3E/.cjFVpZ5O7nPNj4YITZHUGWgpx7ic3ZnFn4pEUmy', '2026-02-23 20:17:04'),
+(46, 'qa_tst_%ts%', '$2y$10$/9cgDCo3oUf66dN.volGie..ZIeg7uDpJzsJMJlxWXF/.NI81q18.', '2026-05-10 20:58:34'),
+(47, 'qa_tst_8888', '$2y$10$OJB.kXx.ve/6KiONF7mZyek4RCcStNIPZuDDVPHSW/PO2D2jZq5Vm', '2026-05-10 20:58:46');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user_article_favorite`
+--
+
+CREATE TABLE `user_article_favorite` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `article_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `user_article_favorite`
+--
+
+INSERT INTO `user_article_favorite` (`id`, `user_id`, `article_id`, `created_at`) VALUES
+(1, 1, 1, '2026-03-19 10:36:00');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user_article_read`
+--
+
+CREATE TABLE `user_article_read` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `article_id` int(11) NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `read_at` timestamp NULL DEFAULT NULL,
+  `progress_percent` int(3) DEFAULT '0' COMMENT 'Прогресс чтения 0-100',
+  `last_position` int(11) DEFAULT NULL COMMENT 'Позиция скролла',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `user_article_read`
+--
+
+INSERT INTO `user_article_read` (`id`, `user_id`, `article_id`, `is_read`, `read_at`, `progress_percent`, `last_position`, `created_at`, `updated_at`) VALUES
+(1, 33, 1, 0, '2026-02-28 16:46:28', 0, NULL, '2026-02-28 15:31:54', '2026-02-28 16:57:58'),
+(2, 26, 1, 1, '2026-03-02 17:15:05', 0, NULL, '2026-02-28 15:42:18', '2026-03-02 17:15:05'),
+(3, 26, 2, 0, '2026-03-03 12:34:53', 0, NULL, '2026-03-03 12:34:53', NULL),
+(4, 1, 1, 1, '2026-03-18 13:43:56', 0, NULL, '2026-03-10 14:24:27', '2026-03-18 13:43:56'),
+(5, 1, 2, 0, '2026-03-25 12:30:13', 0, NULL, '2026-03-25 12:30:13', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user_test_favorite`
+--
+
+CREATE TABLE `user_test_favorite` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `test_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `user_test_favorite`
+--
+
+INSERT INTO `user_test_favorite` (`id`, `user_id`, `test_id`, `created_at`) VALUES
+(37, 26, 1, '2026-03-10 10:11:56'),
+(38, 1, 1, '2026-03-15 15:13:51');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `user_test_passed`
+--
+
+CREATE TABLE `user_test_passed` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `test_id` int(11) NOT NULL,
+  `is_passed` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Дамп данных таблицы `user_test_passed`
+--
+
+INSERT INTO `user_test_passed` (`id`, `user_id`, `test_id`, `is_passed`, `created_at`, `updated_at`) VALUES
+(1, 26, 1, 1, '2026-03-03 18:29:17', NULL),
+(2, 1, 1, 1, '2026-03-18 17:53:08', NULL);
 
 --
 -- Индексы сохранённых таблиц
 --
+
+--
+-- Индексы таблицы `admins`
+--
+ALTER TABLE `admins`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Индексы таблицы `articles`
@@ -282,13 +414,22 @@ ALTER TABLE `articles`
 -- Индексы таблицы `modules`
 --
 ALTER TABLE `modules`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_modules_module_type_id` (`module_type_id`);
+
+--
+-- Индексы таблицы `module_types`
+--
+ALTER TABLE `module_types`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_module_types_slug` (`slug`);
 
 --
 -- Индексы таблицы `tasks`
 --
 ALTER TABLE `tasks`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_topic_id` (`topic_id`);
 
 --
 -- Индексы таблицы `tests`
@@ -310,44 +451,108 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Индексы таблицы `user_article_favorite`
+--
+ALTER TABLE `user_article_favorite`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Индексы таблицы `user_article_read`
+--
+ALTER TABLE `user_article_read`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_article` (`user_id`,`article_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_article_id` (`article_id`),
+  ADD KEY `idx_is_read` (`is_read`);
+
+--
+-- Индексы таблицы `user_test_favorite`
+--
+ALTER TABLE `user_test_favorite`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Индексы таблицы `user_test_passed`
+--
+ALTER TABLE `user_test_passed`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT для сохранённых таблиц
 --
+
+--
+-- AUTO_INCREMENT для таблицы `admins`
+--
+ALTER TABLE `admins`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT для таблицы `articles`
 --
 ALTER TABLE `articles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT для таблицы `modules`
 --
 ALTER TABLE `modules`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT для таблицы `module_types`
+--
+ALTER TABLE `module_types`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT для таблицы `tasks`
 --
 ALTER TABLE `tasks`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT для таблицы `tests`
 --
 ALTER TABLE `tests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT для таблицы `topics`
 --
 ALTER TABLE `topics`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT для таблицы `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+
+--
+-- AUTO_INCREMENT для таблицы `user_article_favorite`
+--
+ALTER TABLE `user_article_favorite`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT для таблицы `user_article_read`
+--
+ALTER TABLE `user_article_read`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT для таблицы `user_test_favorite`
+--
+ALTER TABLE `user_test_favorite`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+
+--
+-- AUTO_INCREMENT для таблицы `user_test_passed`
+--
+ALTER TABLE `user_test_passed`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц
@@ -362,10 +567,29 @@ ALTER TABLE `articles`
   ADD CONSTRAINT `articles_ibfk_3` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE;
 
 --
+-- Ограничения внешнего ключа таблицы `modules`
+--
+ALTER TABLE `modules`
+  ADD CONSTRAINT `fk_modules_module_type` FOREIGN KEY (`module_type_id`) REFERENCES `module_types` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `tasks`
+--
+ALTER TABLE `tasks`
+  ADD CONSTRAINT `fk_tasks_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Ограничения внешнего ключа таблицы `topics`
 --
 ALTER TABLE `topics`
   ADD CONSTRAINT `topics_ibfk_1` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `user_article_read`
+--
+ALTER TABLE `user_article_read`
+  ADD CONSTRAINT `fk_user_article_read_article` FOREIGN KEY (`article_id`) REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_user_article_read_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

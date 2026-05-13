@@ -14,6 +14,12 @@ class ArticleRepository extends AbstractRepository
             articles.title,
             articles.description,
             modules.title AS module_title,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color,
             articles.topic_id,
             topics.title AS topic_title,
             articles.test_id,
@@ -23,10 +29,11 @@ class ArticleRepository extends AbstractRepository
             articles.file_path,
             articles.created_at
         FROM articles
-        LEFT JOIN topics ON articles.topic_id = topics.id
-        LEFT JOIN modules ON topics.module_id = modules.id
-        LEFT JOIN tests ON articles.test_id = tests.id
-        LEFT JOIN tasks ON articles.task_id = tasks.id";
+        LEFT JOIN topics       ON articles.topic_id      = topics.id
+        LEFT JOIN modules      ON topics.module_id       = modules.id
+        LEFT JOIN module_types ON modules.module_type_id = module_types.id
+        LEFT JOIN tests        ON articles.test_id       = tests.id
+        LEFT JOIN tasks        ON articles.task_id       = tasks.id";
 
     /** @return Article[] */
     public function findAll(): array

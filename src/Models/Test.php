@@ -13,6 +13,8 @@ class Test
     public ?string $file_path;
     public ?string $article_title;
     public ?string $module_title;
+    /** @var array<string,mixed>|null */
+    public ?array $module_type;
 
     public static function fromArray(array $row): self
     {
@@ -25,6 +27,7 @@ class Test
         $t->file_path      = isset($row['file_path']) ? (string)$row['file_path'] : null;
         $t->article_title  = isset($row['article_title']) ? (string)$row['article_title'] : null;
         $t->module_title   = isset($row['module_title']) ? (string)$row['module_title'] : null;
+        $t->module_type    = ModuleType::embeddedFromPrefixedRow($row);
         return $t;
     }
 
@@ -39,6 +42,7 @@ class Test
             'file_path'      => $this->file_path,
             'article_title'  => $this->article_title,
             'module_title'   => $this->module_title,
+            'module_type'    => $this->module_type,
         ];
     }
 }

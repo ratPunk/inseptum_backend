@@ -3,30 +3,37 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Models\ModuleType;
+
 class TaskRepository extends AbstractRepository
 {
     protected string $table = 'tasks';
 
+    private const SELECT = "SELECT
+            tasks.*,
+            topics.title  AS topic_title,
+            modules.title AS module_title,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color
+         FROM tasks
+         LEFT JOIN topics       ON tasks.topic_id        = topics.id
+         LEFT JOIN modules      ON topics.module_id      = modules.id
+         LEFT JOIN module_types ON modules.module_type_id = module_types.id";
+
     public function findAllWithJoins(): array
     {
-        return $this->db->fetchAll(
-            'SELECT tasks.*, topics.title AS topic_title, modules.title AS module_title
-             FROM tasks
-             LEFT JOIN topics  ON tasks.topic_id = topics.id
-             LEFT JOIN modules ON topics.module_id = modules.id'
-        );
+        $rows = $this->db->fetchAll(self::SELECT);
+        return array_map([self::class, 'embedModuleType'], $rows);
     }
 
     public function findOneWithJoins(int $id): ?array
     {
-        return $this->db->fetch(
-            'SELECT tasks.*, topics.title AS topic_title, modules.title AS module_title
-             FROM tasks
-             LEFT JOIN topics  ON tasks.topic_id = topics.id
-             LEFT JOIN modules ON topics.module_id = modules.id
-             WHERE tasks.id = :id',
-            ['id' => $id]
-        );
+        $row = $this->db->fetch(self::SELECT . ' WHERE tasks.id = :id', ['id' => $id]);
+        return $row === null ? null : self::embedModuleType($row);
     }
 
     public function findShortById(int $id): ?array
@@ -35,5 +42,18 @@ class TaskRepository extends AbstractRepository
             'SELECT title, description FROM `tasks` WHERE id = :id',
             ['id' => $id]
         );
+    }
+
+    /**
+     * Move mt_* prefixed columns into a nested `module_type` object and
+     * strip them from the flat row.
+     */
+    private static function embedModuleType(array $row): array
+    {
+        $row['module_type'] = ModuleType::embeddedFromPrefixedRow($row);
+        foreach (['mt_id', 'mt_slug', 'mt_name', 'mt_icon', 'mt_highlight_language', 'mt_color'] as $col) {
+            unset($row[$col]);
+        }
+        return $row;
     }
 }

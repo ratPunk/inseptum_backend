@@ -9,35 +9,51 @@ class ModuleRepository extends AbstractRepository
 {
     protected string $table = 'modules';
 
+    private const SELECT = "SELECT
+            modules.*,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color
+        FROM `modules`
+        LEFT JOIN `module_types` ON modules.module_type_id = module_types.id";
+
     /**
      * @return Module[]
      */
     public function findAll(): array
     {
-        $rows = $this->db->fetchAll("SELECT * FROM `modules` ORDER BY id");
+        $rows = $this->db->fetchAll(self::SELECT . ' ORDER BY modules.id');
         return array_map([Module::class, 'fromArray'], $rows);
     }
 
     public function findOne(int $id): ?Module
     {
-        $row = $this->db->fetch('SELECT * FROM `modules` WHERE id = :id', ['id' => $id]);
+        $row = $this->db->fetch(self::SELECT . ' WHERE modules.id = :id', ['id' => $id]);
         return $row === null ? null : Module::fromArray($row);
     }
 
     public function findByTitle(string $title): ?Module
     {
         $row = $this->db->fetch(
-            'SELECT * FROM `modules` WHERE LOWER(`title`) = LOWER(:title) LIMIT 1',
+            self::SELECT . ' WHERE LOWER(modules.`title`) = LOWER(:title) LIMIT 1',
             ['title' => $title]
         );
         return $row === null ? null : Module::fromArray($row);
     }
 
-    public function create(string $title, string $description): int
+    public function create(string $title, string $description, ?int $moduleTypeId = null): int
     {
         $this->db->execute(
-            'INSERT INTO `modules` (`title`, `description`) VALUES (:title, :description)',
-            ['title' => $title, 'description' => $description]
+            'INSERT INTO `modules` (`title`, `description`, `module_type_id`)
+             VALUES (:title, :description, :module_type_id)',
+            [
+                'title'          => $title,
+                'description'    => $description,
+                'module_type_id' => $moduleTypeId,
+            ]
         );
         return (int)$this->db->lastInsertId();
     }
@@ -47,11 +63,11 @@ class ModuleRepository extends AbstractRepository
         if (empty($fields)) {
             return 0;
         }
+        $allowed = ['title', 'description', 'module_type_id'];
         $set = [];
         $params = ['id' => $id];
         foreach ($fields as $col => $value) {
-            // whitelist column names
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $col)) {
+            if (!in_array($col, $allowed, true)) {
                 continue;
             }
             $set[] = "`$col` = :$col";

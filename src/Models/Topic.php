@@ -10,14 +10,23 @@ class Topic
     public string $title;
     public ?string $description;
     public ?string $module_title;
+    /** @var array<string,mixed>|null */
+    public ?array $module_type;
 
-    public function __construct(int $id, int $moduleId, string $title, ?string $description, ?string $moduleTitle = null)
-    {
+    public function __construct(
+        int $id,
+        int $moduleId,
+        string $title,
+        ?string $description,
+        ?string $moduleTitle = null,
+        ?array $moduleType = null
+    ) {
         $this->id           = $id;
         $this->module_id    = $moduleId;
         $this->title        = $title;
         $this->description  = $description;
         $this->module_title = $moduleTitle;
+        $this->module_type  = $moduleType;
     }
 
     public static function fromArray(array $row): self
@@ -27,7 +36,8 @@ class Topic
             (int)($row['module_id'] ?? 0),
             (string)($row['title'] ?? ''),
             isset($row['description']) ? (string)$row['description'] : null,
-            isset($row['module_title']) ? (string)$row['module_title'] : null
+            isset($row['module_title']) ? (string)$row['module_title'] : null,
+            ModuleType::embeddedFromPrefixedRow($row)
         );
     }
 
@@ -39,6 +49,7 @@ class Topic
             'title'        => $this->title,
             'description'  => $this->description,
             'module_title' => $this->module_title,
+            'module_type'  => $this->module_type,
         ];
     }
 }
