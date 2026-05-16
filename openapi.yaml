@@ -1,0 +1,1239 @@
+openapi: 3.1.0
+info:
+  title: Inseptum API
+  version: 1.0.0
+  description: |
+    Контракт REST API для образовательной платформы Inseptum.
+
+    **Источник правды.** При изменении бэкенда или фронтенда сначала
+    обновляется этот файл, затем код. На фронте типы пересобираются
+    командой `yarn sync-api` (см. inseptum_frontend/package.json).
+
+    **Формат ответов.** Все эндпоинты, кроме `POST /checktask`,
+    возвращают конверт (envelope):
+    ```json
+    { "status": true|false, "message": "string", "data": <T>, "count"?: number }
+    ```
+
+servers:
+  - url: http://localhost/inseptum_backend
+    description: MAMP (локальная разработка)
+
+tags:
+  - name: ModuleTypes
+  - name: Modules
+  - name: Topics
+  - name: Articles
+  - name: ArticleRead
+  - name: Tests
+  - name: TestPassing
+  - name: Tasks
+  - name: TaskPassing
+  - name: Favorites
+  - name: Auth
+
+# =====================================================================
+#                              PATHS
+# =====================================================================
+paths:
+  # ---------------- Module Types ----------------
+  /module-types:
+    get:
+      tags: [ModuleTypes]
+      summary: Список типов модулей
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleTypeListResponse'
+
+  /module-types/{id}:
+    get:
+      tags: [ModuleTypes]
+      summary: Получить тип модуля по id или slug
+      parameters:
+        - $ref: '#/components/parameters/IdOrSlug'
+      responses:
+        '200': { $ref: '#/components/responses/ModuleTypeOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /createmoduletype:
+    post:
+      tags: [ModuleTypes]
+      summary: Создать тип модуля
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleTypeInput'
+      responses:
+        '200': { $ref: '#/components/responses/ModuleTypeOne' }
+
+  /updatemoduletype/{id}:
+    post:
+      tags: [ModuleTypes]
+      summary: Обновить тип модуля
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleTypeInput'
+      responses:
+        '200': { $ref: '#/components/responses/ModuleTypeOne' }
+    put:
+      tags: [ModuleTypes]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModuleTypeInput'
+      responses:
+        '200': { $ref: '#/components/responses/ModuleTypeOne' }
+
+  /deletemoduletype/{id}:
+    delete:
+      tags: [ModuleTypes]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+    post:
+      tags: [ModuleTypes]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+
+  # ---------------- Modules ----------------
+  /modules:
+    get:
+      tags: [Modules]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ModuleListResponse' }
+
+  /modules/{id}:
+    get:
+      tags: [Modules]
+      parameters: [{ $ref: '#/components/parameters/IdOrSlug' }]
+      responses:
+        '200': { $ref: '#/components/responses/ModuleOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /createmodule:
+    post:
+      tags: [Modules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModuleInput' }
+      responses:
+        '200': { $ref: '#/components/responses/ModuleOne' }
+
+  /updatemodule:
+    post:
+      tags: [Modules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ModuleInput'
+                - type: object
+                  required: [module_id]
+                  properties:
+                    module_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/ModuleOne' }
+
+  /deletemodule:
+    post:
+      tags: [Modules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [module_id]
+              properties:
+                module_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+
+  # ---------------- Topics ----------------
+  /topics:
+    get:
+      tags: [Topics]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TopicListResponse' }
+
+  /topics/{id}:
+    get:
+      tags: [Topics]
+      summary: Темы по module_id (или slug модуля)
+      parameters: [{ $ref: '#/components/parameters/IdOrSlug' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TopicListResponse' }
+
+  /createtopic:
+    post:
+      tags: [Topics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TopicInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TopicOne' }
+
+  /updatetopic:
+    post:
+      tags: [Topics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/TopicInput'
+                - type: object
+                  required: [topic_id]
+                  properties:
+                    topic_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/TopicOne' }
+
+  /deletetopic:
+    post:
+      tags: [Topics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic_id]
+              properties:
+                topic_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+
+  # ---------------- Articles ----------------
+  /articles:
+    get:
+      tags: [Articles]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ArticleListResponse' }
+
+  /articles/{id}:
+    get:
+      tags: [Articles]
+      summary: Статьи по topic_id
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ArticleListResponse' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /article/{id}:
+    get:
+      tags: [Articles]
+      summary: Одна статья
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/ArticleOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /createarticle:
+    post:
+      tags: [Articles]
+      description: Multipart с обязательным полем `file` (.docx).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [topic_id, title, description, file]
+              properties:
+                topic_id: { type: integer }
+                title: { type: string, maxLength: 30 }
+                description: { type: string }
+                file:
+                  type: string
+                  format: binary
+                  description: .docx файл статьи
+      responses:
+        '200': { $ref: '#/components/responses/ArticleOne' }
+
+  /updatearticle:
+    post:
+      tags: [Articles]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [article_id]
+              properties:
+                article_id: { type: integer }
+                topic_id: { type: integer }
+                title: { type: string, maxLength: 30 }
+                description: { type: string }
+                file: { type: string, format: binary, nullable: true }
+      responses:
+        '200': { $ref: '#/components/responses/ArticleOne' }
+
+  /deletearticle:
+    post:
+      tags: [Articles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [article_id]
+              properties:
+                article_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+
+  /articlefile/{id}:
+    get:
+      tags: [Articles]
+      summary: HTML-конвертация .docx статьи
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ArticleFileResponse' }
+
+  # ---------------- Article read progress ----------------
+  /readarticle/{id}/{user_id}:
+    get:
+      tags: [ArticleRead]
+      summary: Запись о прочтении (создаётся при отсутствии)
+      parameters:
+        - { $ref: '#/components/parameters/IdInt' }
+        - in: path
+          name: user_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/ArticleReadOne' }
+        '201': { $ref: '#/components/responses/ArticleReadOne' }
+
+  /readarticle:
+    post:
+      tags: [ArticleRead]
+      summary: Отметить статью как прочитанную
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [article_id, user_id]
+              properties:
+                article_id: { type: integer }
+                user_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/ArticleReadOne' }
+
+  # ---------------- Tests ----------------
+  /tests:
+    get:
+      tags: [Tests]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TestListResponse' }
+    post:
+      tags: [Tests]
+      description: Multipart с обязательным `file` (.json).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/TestMultipartInput' }
+      responses:
+        '201': { $ref: '#/components/responses/TestOne' }
+
+  /tests/{id}:
+    get:
+      tags: [Tests]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/TestOne' }
+        '404': { $ref: '#/components/responses/Error' }
+    post:
+      tags: [Tests]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/TestMultipartInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TestOne' }
+    delete:
+      tags: [Tests]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+
+  /createtest:
+    post:
+      tags: [Tests]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/TestMultipartInput' }
+      responses:
+        '201': { $ref: '#/components/responses/TestOne' }
+
+  /updatetest:
+    post:
+      tags: [Tests]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/TestMultipartInput'
+                - type: object
+                  required: [test_id]
+                  properties:
+                    test_id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/TestOne' }
+
+  /updatetest/{id}:
+    post:
+      tags: [Tests]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/TestMultipartInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TestOne' }
+
+  # ---------------- Test passing ----------------
+  /gettestfile:
+    post:
+      tags: [TestPassing]
+      summary: Вопросы теста (без правильных ответов)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [test_id]
+              properties:
+                test_id: { type: integer }
+                question_id: { type: integer, nullable: true }
+      responses:
+        '200':
+          description: Массив вопросов либо один вопрос (если передан question_id)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        oneOf:
+                          - type: array
+                            items: { $ref: '#/components/schemas/Question' }
+                          - { $ref: '#/components/schemas/Question' }
+                          - { type: 'null' }
+
+  /gettestresults:
+    post:
+      tags: [TestPassing]
+      summary: Подсчёт правильных ответов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [test_id, user_answers]
+              properties:
+                test_id: { type: integer }
+                user_answers:
+                  type: array
+                  items: { $ref: '#/components/schemas/Answer' }
+      responses:
+        '200':
+          description: Число правильных ответов
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { type: integer, minimum: 0 }
+
+  /setpassedtest:
+    post:
+      tags: [TestPassing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserTestRef' }
+      responses:
+        '200': { $ref: '#/components/responses/BoolEnvelope' }
+
+  /getpassedtest:
+    post:
+      tags: [TestPassing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserTestRef' }
+      responses:
+        '200': { $ref: '#/components/responses/BoolEnvelope' }
+
+  /getpassedtests:
+    post:
+      tags: [TestPassing]
+      summary: Batch — массив ID пройденных тестов пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: integer }
+                      count: { type: integer }
+
+  # ---------------- Tasks ----------------
+  /tasks:
+    get:
+      tags: [Tasks]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaskListResponse' }
+
+  /tasks/{id}:
+    get:
+      tags: [Tasks]
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/TaskOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /checktask:
+    post:
+      tags: [Tasks]
+      summary: Проверка решения задачи (legacy формат — НЕ envelope)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [taskId, code]
+              properties:
+                taskId: { type: integer }
+                code: { type: string }
+                user_id: { type: integer, nullable: true }
+      responses:
+        '200':
+          description: Legacy формат
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckTaskResult' }
+
+  /setpassedtask:
+    post:
+      tags: [TaskPassing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserTaskRef' }
+      responses:
+        '200': { $ref: '#/components/responses/BoolEnvelope' }
+
+  /getpassedtask:
+    post:
+      tags: [TaskPassing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserTaskRef' }
+      responses:
+        '200': { $ref: '#/components/responses/BoolEnvelope' }
+
+  /getpassedtasks:
+    post:
+      tags: [TaskPassing]
+      summary: Batch — массив ID пройденных задач пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { type: integer }
+                      count: { type: integer }
+
+  # ---------------- Favorites ----------------
+  /getfavorite:
+    post:
+      tags: [Favorites]
+      summary: Избранное пользователя по типу
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, favorite_type]
+              properties:
+                user_id: { type: integer }
+                favorite_type:
+                  type: string
+                  enum: [article, test, task]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          oneOf:
+                            - { $ref: '#/components/schemas/Article' }
+                            - { $ref: '#/components/schemas/Test' }
+                            - { $ref: '#/components/schemas/Task' }
+                      count: { type: integer }
+
+  /setfavorite:
+    post:
+      tags: [Favorites]
+      summary: Toggle избранного (data всегда null)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, favorite_id, favorite_type]
+              properties:
+                user_id: { type: integer }
+                favorite_id: { type: integer }
+                favorite_type:
+                  type: string
+                  enum: [article, test, task]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { type: 'null' }
+
+  # ---------------- Auth ----------------
+  /register:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/UserPublic' }
+
+  /login:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/UserPublic' }
+
+  /adminlogin:
+    post:
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginInput' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/AdminPublic' }
+
+# =====================================================================
+#                            COMPONENTS
+# =====================================================================
+components:
+  parameters:
+    IdInt:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer }
+    IdOrSlug:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+      description: Числовой ID или slug.
+
+  # ------------- Базовый envelope -------------
+  schemas:
+    Envelope:
+      type: object
+      required: [status, message]
+      properties:
+        status: { type: boolean }
+        message: { type: string }
+        data: {}
+        count: { type: integer }
+
+    ErrorEnvelope:
+      type: object
+      required: [status, message]
+      properties:
+        status: { type: boolean, enum: [false] }
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties: { type: string }
+
+    # ------------- ModuleType -------------
+    ModuleType:
+      type: object
+      required: [id, slug, name, icon]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        icon:
+          type: string
+          description: Строковый идентификатор иконки (например, FaBootstrap).
+        highlight_language: { type: string, nullable: true }
+        color: { type: string, nullable: true }
+        created_at: { type: string, nullable: true }
+        updated_at: { type: string, nullable: true }
+
+    ModuleTypeEmbedded:
+      type: object
+      required: [id, slug, name, icon]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        icon: { type: string }
+        highlight_language: { type: string, nullable: true }
+        color: { type: string, nullable: true }
+
+    ModuleTypeInput:
+      type: object
+      required: [slug, name, icon]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        icon: { type: string }
+        highlight_language: { type: string, nullable: true }
+        color: { type: string, nullable: true }
+
+    ModuleTypeListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/ModuleType' }
+            count: { type: integer }
+
+    # ------------- Module -------------
+    Module:
+      type: object
+      required: [id, title, slug, description]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        slug:
+          type: string
+          description: lowercased(title), legacy
+        description: { type: string }
+        module_type_id: { type: integer, nullable: true }
+        module_type:
+          anyOf:
+            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
+            - { type: 'null' }
+
+    ModuleInput:
+      type: object
+      required: [title, description]
+      properties:
+        title: { type: string, maxLength: 20 }
+        description: { type: string }
+        module_type_id: { type: integer, nullable: true }
+
+    ModuleListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Module' }
+            count: { type: integer }
+
+    # ------------- Topic -------------
+    Topic:
+      type: object
+      required: [id, module_id, title]
+      properties:
+        id: { type: integer }
+        module_id: { type: integer }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        module_title: { type: string, nullable: true }
+        module_type:
+          anyOf:
+            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
+            - { type: 'null' }
+
+    TopicInput:
+      type: object
+      required: [module_id, title]
+      properties:
+        module_id: { type: integer }
+        title: { type: string, maxLength: 200 }
+        description: { type: string, nullable: true }
+
+    TopicListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Topic' }
+            count: { type: integer }
+
+    # ------------- Article -------------
+    Article:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        module_title: { type: string, nullable: true }
+        module_type:
+          anyOf:
+            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
+            - { type: 'null' }
+        topic_id: { type: integer, nullable: true }
+        topic_title: { type: string, nullable: true }
+        test_id: { type: integer, nullable: true }
+        test_title: { type: string, nullable: true }
+        task_id: { type: integer, nullable: true }
+        task_title: { type: string, nullable: true }
+        file_path: { type: string, nullable: true }
+        created_at: { type: string, nullable: true }
+
+    ArticleListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Article' }
+            count: { type: integer }
+
+    ArticleFileResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: string
+              description: HTML, конвертированный из .docx
+
+    ArticleRead:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        article_id: { type: integer }
+        is_read: { type: boolean }
+        read_at: { type: string, nullable: true }
+        progress_percent: { type: integer, nullable: true }
+        last_position: { type: integer, nullable: true }
+        created_at: { type: string, nullable: true }
+        updated_at: { type: string, nullable: true }
+
+    # ------------- Test -------------
+    Test:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        time_limit: { type: integer, nullable: true }
+        question_count: { type: integer, nullable: true }
+        file_path: { type: string, nullable: true }
+        article_title: { type: string, nullable: true }
+        module_title: { type: string, nullable: true }
+        module_type:
+          anyOf:
+            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
+            - { type: 'null' }
+
+    TestMultipartInput:
+      type: object
+      required: [title, description, time_limit, file]
+      properties:
+        title: { type: string, maxLength: 40 }
+        description: { type: string }
+        time_limit: { type: integer, minimum: 1 }
+        file:
+          type: string
+          format: binary
+          description: JSON-файл с вопросами
+
+    TestListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Test' }
+            count: { type: integer }
+
+    Question:
+      type: object
+      required: [id, question, answers]
+      properties:
+        id: { type: integer }
+        question: { type: string }
+        answers:
+          type: array
+          items: { type: string }
+
+    Answer:
+      type: object
+      required: [questionId, answer]
+      properties:
+        questionId: { type: integer }
+        answer: { type: string }
+
+    UserTestRef:
+      type: object
+      required: [user_id, test_id]
+      properties:
+        user_id: { type: integer }
+        test_id: { type: integer }
+
+    # ------------- Task -------------
+    Task:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        topic_id: { type: integer, nullable: true }
+        topic_title: { type: string, nullable: true }
+        module_title: { type: string, nullable: true }
+        module_type:
+          anyOf:
+            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
+            - { type: 'null' }
+        created_at: { type: string, nullable: true }
+
+    TaskListResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/Task' }
+            count: { type: integer }
+
+    CheckTaskResult:
+      type: object
+      description: Legacy формат — НЕ envelope.
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+
+    UserTaskRef:
+      type: object
+      required: [user_id, task_id]
+      properties:
+        user_id: { type: integer }
+        task_id: { type: integer }
+
+    # ------------- Auth -------------
+    RegisterInput:
+      type: object
+      required: [username, password, confirm_password]
+      properties:
+        username: { type: string, maxLength: 20 }
+        password: { type: string }
+        confirm_password: { type: string }
+
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+
+    UserPublic:
+      type: object
+      properties:
+        user_id: { type: integer }
+        username: { type: string }
+        created_at: { type: string }
+
+    AdminPublic:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role:
+          type: string
+          enum: [admin, moderator, spectator]
+
+  # ------------------ Reusable responses ------------------
+  responses:
+    Error:
+      description: Ошибка
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+    ModuleTypeOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ModuleType' }
+
+    ModuleOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Module' }
+
+    TopicOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Topic' }
+
+    ArticleOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Article' }
+
+    ArticleReadOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ArticleRead' }
+
+    TestOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Test' }
+
+    TaskOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Task' }
+
+    BoolEnvelope:
+      description: Булев ответ в data
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { type: boolean }
+
+    DeleteAck:
+      description: Подтверждение удаления
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: true
