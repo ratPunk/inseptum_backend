@@ -15,7 +15,6 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleTypeController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TestController;
-use App\Http\Controllers\TopicController;
 
 // ---------- Module Types ----------
 $router->get('/module-types',           [ModuleTypeController::class, 'index']);
@@ -35,20 +34,11 @@ $router->post('/createmodule',     [ModuleController::class, 'create']);
 $router->post('/updatemodule',     [ModuleController::class, 'update']);
 $router->post('/deletemodule',     [ModuleController::class, 'delete']);
 
-// ---------- Topics ----------
-$router->get('/topics',            [TopicController::class, 'index']);
-$router->get('/topics/{id}',       [TopicController::class, 'byModule']);
-$router->post('/createtopic',      [TopicController::class, 'create']);
-$router->post('/updatetopic',      [TopicController::class, 'update']);
-$router->post('/deletetopic',      [TopicController::class, 'delete']);
-
 // ---------- Articles ----------
 // Legacy semantics:
 //   GET /articles           -> all articles
-//   GET /articles/{id}      -> articles by topic_id
 //   GET /article/{id}       -> single article
 $router->get('/articles',          [ArticleController::class, 'index']);
-$router->get('/articles/{id}',     [ArticleController::class, 'byTopic']);
 $router->get('/article/{id}',      [ArticleController::class, 'show']);
 $router->post('/createarticle',    [ArticleController::class, 'create']);
 $router->post('/updatearticle',    [ArticleController::class, 'update']);

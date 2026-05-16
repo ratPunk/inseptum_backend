@@ -22,7 +22,6 @@ servers:
 tags:
   - name: ModuleTypes
   - name: Modules
-  - name: Topics
   - name: Articles
   - name: ArticleRead
   - name: Tests
@@ -171,72 +170,6 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/DeleteAck' }
 
-  # ---------------- Topics ----------------
-  /topics:
-    get:
-      tags: [Topics]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/TopicListResponse' }
-
-  /topics/{id}:
-    get:
-      tags: [Topics]
-      summary: Темы по module_id (или slug модуля)
-      parameters: [{ $ref: '#/components/parameters/IdOrSlug' }]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/TopicListResponse' }
-
-  /createtopic:
-    post:
-      tags: [Topics]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/TopicInput' }
-      responses:
-        '200': { $ref: '#/components/responses/TopicOne' }
-
-  /updatetopic:
-    post:
-      tags: [Topics]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              allOf:
-                - $ref: '#/components/schemas/TopicInput'
-                - type: object
-                  required: [topic_id]
-                  properties:
-                    topic_id: { type: integer }
-      responses:
-        '200': { $ref: '#/components/responses/TopicOne' }
-
-  /deletetopic:
-    post:
-      tags: [Topics]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [topic_id]
-              properties:
-                topic_id: { type: integer }
-      responses:
-        '200': { $ref: '#/components/responses/DeleteAck' }
-
   # ---------------- Articles ----------------
   /articles:
     get:
@@ -247,19 +180,6 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ArticleListResponse' }
-
-  /articles/{id}:
-    get:
-      tags: [Articles]
-      summary: Статьи по topic_id
-      parameters: [{ $ref: '#/components/parameters/IdInt' }]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ArticleListResponse' }
-        '404': { $ref: '#/components/responses/Error' }
 
   /article/{id}:
     get:
@@ -280,9 +200,8 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [topic_id, title, description, file]
+              required: [title, description, file]
               properties:
-                topic_id: { type: integer }
                 title: { type: string, maxLength: 30 }
                 description: { type: string }
                 file:
@@ -304,7 +223,6 @@ paths:
               required: [article_id]
               properties:
                 article_id: { type: integer }
-                topic_id: { type: integer }
                 title: { type: string, maxLength: 30 }
                 description: { type: string }
                 file: { type: string, format: binary, nullable: true }
@@ -901,39 +819,6 @@ components:
               items: { $ref: '#/components/schemas/Module' }
             count: { type: integer }
 
-    # ------------- Topic -------------
-    Topic:
-      type: object
-      required: [id, module_id, title]
-      properties:
-        id: { type: integer }
-        module_id: { type: integer }
-        title: { type: string }
-        description: { type: string, nullable: true }
-        module_title: { type: string, nullable: true }
-        module_type:
-          anyOf:
-            - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
-            - { type: 'null' }
-
-    TopicInput:
-      type: object
-      required: [module_id, title]
-      properties:
-        module_id: { type: integer }
-        title: { type: string, maxLength: 200 }
-        description: { type: string, nullable: true }
-
-    TopicListResponse:
-      allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            data:
-              type: array
-              items: { $ref: '#/components/schemas/Topic' }
-            count: { type: integer }
-
     # ------------- Article -------------
     Article:
       type: object
@@ -947,8 +832,6 @@ components:
           anyOf:
             - { $ref: '#/components/schemas/ModuleTypeEmbedded' }
             - { type: 'null' }
-        topic_id: { type: integer, nullable: true }
-        topic_title: { type: string, nullable: true }
         test_id: { type: integer, nullable: true }
         test_title: { type: string, nullable: true }
         task_id: { type: integer, nullable: true }
@@ -1063,8 +946,6 @@ components:
         difficulty:
           type: string
           enum: [easy, medium, hard]
-        topic_id: { type: integer, nullable: true }
-        topic_title: { type: string, nullable: true }
         module_title: { type: string, nullable: true }
         module_type:
           anyOf:
@@ -1158,17 +1039,6 @@ components:
               - type: object
                 properties:
                   data: { $ref: '#/components/schemas/Module' }
-
-    TopicOne:
-      description: OK
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: '#/components/schemas/Envelope'
-              - type: object
-                properties:
-                  data: { $ref: '#/components/schemas/Topic' }
 
     ArticleOne:
       description: OK

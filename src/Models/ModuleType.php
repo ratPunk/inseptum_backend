@@ -55,7 +55,7 @@ class ModuleType
 
     /**
      * Compact representation suitable for embedding into related entities
-     * (Module, Topic, Article, Task, Test). Omits timestamps.
+     * (Module, Article, Task, Test). Omits timestamps.
      */
     public function toEmbeddedArray(): array
     {

@@ -1,4 +1,3 @@
-mysqldump: [Warning] Using a password on the command line interface can be insecure.
 -- MySQL dump 10.13  Distrib 5.7.24, for Win64 (x86_64)
 --
 -- Host: 127.0.0.1    Database: inseptum
@@ -51,6 +50,7 @@ DROP TABLE IF EXISTS `articles`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `articles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `topic_id` int(11) NOT NULL,
   `title` varchar(30) NOT NULL,
   `description` text NOT NULL,
   `file_path` varchar(100) NOT NULL,
@@ -58,8 +58,10 @@ CREATE TABLE `articles` (
   `test_id` int(11) DEFAULT NULL,
   `task_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `idx_topic_id` (`topic_id`),
   KEY `idx_test_id` (`test_id`),
   KEY `idx_task_id` (`task_id`),
+  CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE,
   CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`test_id`) REFERENCES `tests` (`id`) ON DELETE CASCADE,
   CONSTRAINT `articles_ibfk_3` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
@@ -71,7 +73,7 @@ CREATE TABLE `articles` (
 
 LOCK TABLES `articles` WRITE;
 /*!40000 ALTER TABLE `articles` DISABLE KEYS */;
-INSERT INTO `articles` VALUES (1,'Как работать с bootstrap','Статья с основами подключения bootstrap в ваш проект','bootstrap_connect.docx','2026-02-13 17:41:15',1,1),(2,'атрибуты bootstrapз','атрибуты bootstrap','bootstrap_connect — копия.docx','2026-02-28 21:00:00',NULL,NULL),(3,'dasdsd','dasdasd','bootstrap_connect — копия.docx','2026-04-02 09:56:33',NULL,NULL);
+INSERT INTO `articles` VALUES (1,2,'Как работать с bootstrap','Статья с основами подключения bootstrap в ваш проект','bootstrap_connect.docx','2026-02-13 17:41:15',1,1),(2,2,'атрибуты bootstrapз','атрибуты bootstrap','bootstrap_connect — копия.docx','2026-02-28 21:00:00',NULL,NULL),(3,16,'dasdsd','dasdasd','bootstrap_connect — копия.docx','2026-04-02 09:56:33',NULL,NULL);
 /*!40000 ALTER TABLE `articles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -175,8 +177,11 @@ CREATE TABLE `tasks` (
   `title` varchar(255) NOT NULL,
   `description` text,
   `difficulty` enum('easy','medium','hard') DEFAULT 'medium',
+  `topic_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_topic_id` (`topic_id`),
+  CONSTRAINT `fk_tasks_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -186,7 +191,7 @@ CREATE TABLE `tasks` (
 
 LOCK TABLES `tasks` WRITE;
 /*!40000 ALTER TABLE `tasks` DISABLE KEYS */;
-INSERT INTO `tasks` VALUES (1,'Задача на создание Bootstrap классов','Создайте bootstrap класс и используйте его','easy','2026-04-17 11:42:50');
+INSERT INTO `tasks` VALUES (1,'Задача на создание Bootstrap классов','Создайте bootstrap класс и используйте его','easy',2,'2026-04-17 11:42:50');
 /*!40000 ALTER TABLE `tasks` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -217,6 +222,34 @@ LOCK TABLES `tests` WRITE;
 /*!40000 ALTER TABLE `tests` DISABLE KEYS */;
 INSERT INTO `tests` VALUES (1,'Основы Bootstrap','Тест по теме Основы Bootstrap раскрывающий и дополняющий данную тему','bootstrap_connect',20,4,'2026-03-01 20:58:26'),(5,'da','dsa','1775152339_bootstrap_connect — копия',12,4,'2026-04-02 17:52:19');
 /*!40000 ALTER TABLE `tests` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `topics`
+--
+
+DROP TABLE IF EXISTS `topics`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `topics` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `module_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` text,
+  PRIMARY KEY (`id`),
+  KEY `module_id` (`module_id`),
+  CONSTRAINT `topics_ibfk_1` FOREIGN KEY (`module_id`) REFERENCES `modules` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=103 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `topics`
+--
+
+LOCK TABLES `topics` WRITE;
+/*!40000 ALTER TABLE `topics` DISABLE KEYS */;
+INSERT INTO `topics` VALUES (1,3,'Структура страницы','Основы структуры страницы, базовое понимание для начала создания своей страницы.'),(2,1,'Bootstrap основы','Основы для понимания взаимодействия'),(4,1,'Компоненты','Кнопки, карточки, модальные окна и навигация'),(5,1,'Кастомизация','Переопределение переменных и сборка кастомной темы'),(6,2,'Основы языка','Переменные, типы данных, функции и события'),(7,2,'Работа с DOM','Поиск элементов, изменение контента, обработка событий'),(8,2,'Асинхронность','Promises, async/await, fetch API'),(9,3,'Семантическая верстка','Правильное использование тегов header, main, section, article'),(10,3,'Формы и инпуты','Создание форм, типы полей, валидация'),(11,3,'Мультимедиа','Вставка изображений, аудио и видео'),(12,4,'Основы синтаксиса','Переменные, массивы, условия, циклы'),(13,4,'Работа с формами и БД','Обработка POST-запросов, подключение к MySQL'),(14,4,'ООП и сессии','Классы, авторизация, работа с сессиями'),(15,5,'Основы SQL','SELECT, INSERT, UPDATE, DELETE'),(16,5,'Связи и JOIN','Объединение таблиц, внешние ключи'),(17,5,'Оптимизация запросов','Индексы, EXPLAIN, скорость выполнения'),(18,6,'Массивы и списки','Статические массивы, связные списки'),(19,6,'Стеки и очереди','Принципы LIFO и FIFO, применение'),(20,6,'Деревья и графы','Бинарные деревья, обход графов'),(21,1,'Bootstrap ╨╛╤Б╨╜╨╛╨▓╤Л','╨Ю╤Б╨╜╨╛╨▓╤Л ╨┤╨╗╤П ╨┐╨╛╨╜╨╕╨╝╨░╨╜╨╕╤П ╨▓╨╖╨░╨╕╨╝╨╛╨┤╨╡╨╣╤Б╤В╨▓╨╕╤П'),(22,1,'╨г╤Б╤В╨░╨╜╨╛╨▓╨║╨░ ╨╕ ╨┐╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡','╨Я╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╤З╨╡╤А╨╡╨╖ CDN, npm ╨╕ ╤Б╨▒╨╛╤А╨║╨╛╨╣ Sass'),(23,1,'╨б╨╡╤В╨║╨░ ╨╕ ╨░╨┤╨░╨┐╤В╨╕╨▓╨╜╨╛╤Б╤В╤М','╨Ш╨╖╤Г╤З╨╡╨╜╨╕╨╡ grid-╤Б╨╕╤Б╤В╨╡╨╝╤Л, ╨║╨╛╨╜╤В╨╡╨╣╨╜╨╡╤А╨╛╨▓ ╨╕ breakpoints'),(24,1,'╨Ъ╨╛╨╜╤В╨╡╨╣╨╜╨╡╤А╤Л ╨╕ Flex-╤Г╤В╨╕╨╗╨╕╤В╤Л','╨а╨░╨╖╨╜╨╕╤Ж╨░ container/container-fluid, ╤Г╤В╨╕╨╗╨╕╤В╤Л flex'),(25,1,'╨Ъ╨╛╨╝╨┐╨╛╨╜╨╡╨╜╤В╤Л','╨Ъ╨╜╨╛╨┐╨║╨╕, ╨║╨░╤А╤В╨╛╤З╨║╨╕, ╨╝╨╛╨┤╨░╨╗╤М╨╜╤Л╨╡ ╨╛╨║╨╜╨░ ╨╕ ╨╜╨░╨▓╨╕╨│╨░╤Ж╨╕╤П'),(26,1,'╨д╨╛╤А╨╝╤Л ╨╕ ╨▓╨░╨╗╨╕╨┤╨░╤Ж╨╕╤П','╨б╤В╨╕╨╗╨╕ input, was-validated, ╨┐╨╗╨░╨│╨╕╨╜╤Л ╨▓╨░╨╗╨╕╨┤╨░╤Ж╨╕╨╕'),(27,1,'╨Э╨░╨▓╨╕╨│╨░╤Ж╨╕╤П ╨╕ Navbar','Navbar, Nav, Tabs, Pills ╨╕ off-canvas ╨╝╨╡╨╜╤О'),(28,1,'╨Ь╨╛╨┤╨░╨╗╤М╨╜╤Л╨╡ ╨╛╨║╨╜╨░ ╨╕ ╤В╨╛╤Б╤В╤Л','╨Ь╨╛╨┤╨░╨╗╨║╨╕, ╤В╨╛╤Б╤В╤Л, ╨╛╤Д╤Д╨║╨░╨╜╨▓╨░╤Б, ╨┐╨╛╨┐╨╛╨▓╨╡╤А╤Л'),(29,1,'╨Ш╨║╨╛╨╜╨║╨╕ Bootstrap Icons','╨Я╨╛╨┤╨║╨╗╤О╤З╨╡╨╜╨╕╨╡ ╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╨╜╨╕╨╡ ╨╜╨░╨▒╨╛╤А╨░ ╨╕╨║╨╛╨╜╨╛╨║'),(30,1,'╨Ъ╨░╤Б╤В╨╛╨╝╨╕╨╖╨░╤Ж╨╕╤П','╨Я╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Л╤Е ╨╕ ╤Б╨▒╨╛╤А╨║╨░ ╨║╨░╤Б╤В╨╛╨╝╨╜╨╛╨╣ ╤В╨╡╨╝╤Л'),(31,1,'╨в╨╡╨╝╨╕╨╖╨░╤Ж╨╕╤П ╨╕ Dark mode','╨Я╨╛╨┤╨┤╨╡╤А╨╢╨║╨░ dark mode ╨╕ ╨║╨░╤Б╤В╨╛╨╝╨╜╤Л╤Е ╤В╨╡╨╝ ╤З╨╡╤А╨╡╨╖ Sass'),(36,1,'Установка и подключение','Подключение через CDN, npm и сборкой Sass'),(37,1,'Сетка и адаптивность','Изучение grid-системы, контейнеров и breakpoints'),(38,1,'Контейнеры и Flex-утилиты','Разница container/container-fluid, утилиты flex'),(39,1,'Формы и валидация','Стили input, was-validated, плагины валидации'),(40,1,'Навигация и Navbar','Navbar, Nav, Tabs, Pills и off-canvas меню'),(41,1,'Модальные окна и тосты','Модалки, тосты, оффканвас, поповеры'),(42,1,'Иконки Bootstrap Icons','Подключение и использование набора иконок'),(43,1,'Темизация и Dark mode','Поддержка dark mode и кастомных тем через Sass'),(51,3,'Текст и типографика','Заголовки, абзацы, списки, цитаты, выделения'),(52,3,'Ссылки и навигация','Виды ссылок, якоря, target, rel, навигационные паттерны'),(53,3,'Изображения и picture','img, srcset, sizes, picture, lazy-loading'),(54,3,'Таблицы','thead, tbody, tfoot, scope, объединение ячеек'),(55,3,'Метатеги и SEO','meta description, Open Graph, viewport, canonical'),(56,3,'Доступность (a11y)','aria-атрибуты, alt, контраст, фокус, клавиатурная навигация'),(57,3,'HTML5 API','localStorage, sessionStorage, History, Drag and Drop'),(58,4,'Типы данных и операторы','Скаляры, массивы, объекты, приведение типов'),(59,4,'Функции и области видимости','Объявление, аргументы, замыкания, тип-хинтинг'),(60,4,'Массивы и строки','Полезные функции работы с массивами и строками'),(61,4,'PDO и подготовленные запросы','Безопасная работа с БД через PDO'),(62,4,'Наследование и интерфейсы','Расширение классов, абстрактные классы, интерфейсы, трейты'),(63,4,'Обработка ошибок и исключения','try/catch, иерархия Throwable, кастомные исключения'),(64,4,'Composer и автозагрузка','composer.json, PSR-4, установка пакетов'),(65,4,'REST API на чистом PHP','Маршрутизация, JSON-ответы, статус-коды'),(73,2,'Операторы и управляющие конструкции','if/else, switch, циклы for/while, тернарный оператор'),(74,2,'Функции и замыкания','Объявление функций, стрелочные функции, scope, closure'),(75,2,'Массивы и объекты','map, filter, reduce, деструктуризация, spread'),(76,2,'События и делегирование','addEventListener, всплытие, делегирование, preventDefault'),(77,2,'Fetch и работа с API','GET/POST запросы, обработка ошибок, AbortController'),(78,2,'Модули ES','import/export, default vs named, динамический import'),(79,2,'Классы и ООП в JS','class, extends, super, статические методы'),(80,2,'Обработка ошибок','try/catch/finally, throw, ошибки в Promise'),(88,6,'Двусвязные и кольцевые списки','Реализация и операции вставки/удаления'),(89,6,'Дек и приоритетная очередь','Двусторонние очереди, heap-based priority queue'),(90,6,'Хеш-таблицы','Хеш-функции, коллизии, открытая/закрытая адресация'),(91,6,'Бинарные деревья поиска','BST, балансировка, операции'),(92,6,'Куча (Heap)','Min-heap, max-heap, сортировка кучей'),(93,6,'Графы: BFS и DFS','Поиск в ширину и в глубину, представления графа'),(94,6,'Сортировки','Bubble, Quick, Merge, Heap — анализ сложности'),(95,6,'Алгоритмическая сложность','Big O, оценка времени и памяти');
+/*!40000 ALTER TABLE `topics` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -371,4 +404,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-16 19:36:49
+-- Dump completed on 2026-05-16 18:56:03

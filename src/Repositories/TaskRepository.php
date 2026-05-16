@@ -10,19 +10,8 @@ class TaskRepository extends AbstractRepository
     protected string $table = 'tasks';
 
     private const SELECT = "SELECT
-            tasks.*,
-            topics.title  AS topic_title,
-            modules.title AS module_title,
-            module_types.id   AS mt_id,
-            module_types.slug AS mt_slug,
-            module_types.name AS mt_name,
-            module_types.icon AS mt_icon,
-            module_types.highlight_language AS mt_highlight_language,
-            module_types.color AS mt_color
-         FROM tasks
-         LEFT JOIN topics       ON tasks.topic_id        = topics.id
-         LEFT JOIN modules      ON topics.module_id      = modules.id
-         LEFT JOIN module_types ON modules.module_type_id = module_types.id";
+            tasks.*
+         FROM tasks";
 
     public function findAllWithJoins(): array
     {

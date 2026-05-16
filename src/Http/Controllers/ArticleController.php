@@ -22,16 +22,6 @@ class ArticleController extends AbstractController
         return $this->success($result['data'], 'Статьи найдены', 200, ['count' => $result['count']]);
     }
 
-    public function byTopic(Request $request, array $params): JsonResponse
-    {
-        $topicId = (int)($params['id'] ?? 0);
-        if ($topicId <= 0) {
-            return $this->error('Не указан ID темы', 400);
-        }
-        $result = $this->service->listByTopic($topicId);
-        return $this->success($result['data'], 'Статьи найдены', 200, ['count' => $result['count']]);
-    }
-
     public function show(Request $request, array $params): JsonResponse
     {
         $id = (int)($params['id'] ?? 0);

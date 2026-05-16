@@ -199,10 +199,6 @@ class TestService
             throw $e;
         }
 
-        if ($clean['topic_id'] > 0) {
-            $this->repo->attachToTopic($newId, $clean['topic_id']);
-        }
-
         return [
             'id'             => $newId,
             'title'          => $clean['title'],

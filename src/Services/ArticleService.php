@@ -106,16 +106,6 @@ class ArticleService
         return ['data' => $data, 'count' => count($data)];
     }
 
-    public function listByTopic(int $topicId): array
-    {
-        $articles = $this->repo->findByTopicId($topicId);
-        if (empty($articles)) {
-            throw new NotFoundException('Статьи не найдены');
-        }
-        $data = array_map(static fn(Article $a) => $a->toArray(), $articles);
-        return ['data' => $data, 'count' => count($data)];
-    }
-
     public function getOne(int $id): array
     {
         $article = $this->repo->findOne($id);
@@ -147,7 +137,6 @@ class ArticleService
 
         try {
             $newId = $this->repo->create(
-                $clean['topic_id'],
                 $clean['title'],
                 $clean['description'],
                 $originalName
@@ -194,7 +183,6 @@ class ArticleService
 
         $this->repo->update(
             $id,
-            $clean['topic_id'],
             $clean['title'],
             $clean['description'],
             $newFileName

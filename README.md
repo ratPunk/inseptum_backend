@@ -23,7 +23,6 @@ PHP backend для проекта *inseptum*. Чистая MVC-подобная 
 - [HTTP API](#http-api)
   - [Module Types](#module-types)
   - [Modules](#modules)
-  - [Topics](#topics)
   - [Articles](#articles)
   - [Article File / Read progress](#article-file--read-progress)
   - [Tests](#tests)
@@ -194,7 +193,7 @@ JSON одного из двух видов через
 | `POST /createtest`, `POST /updatetest`, `POST /tests`, `POST /tests/{id}` | `file` | `.json` (валидный JSON-массив вопросов) | [`testsFolder/`](testsFolder) |
 
 Остальные поля передаются в той же `FormData` как обычные строки
-(`title`, `description`, `topic`, `topic_id`, `time_limit` и т.д.).
+(`title`, `description`, `time_limit` и т.д.).
 
 Пример (JS):
 
@@ -202,7 +201,6 @@ JSON одного из двух видов через
 const fd = new FormData();
 fd.append('title', 'Подключение Bootstrap');
 fd.append('description', 'Краткое описание');
-fd.append('topic', '3');                 // topic_id
 fd.append('file', fileInput.files[0]);   // .docx
 await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 ```
@@ -288,51 +286,20 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 `title` — обязательно, ≤ 20 символов; `description` — обязательно;
 `module_type_id` — обязательное целое, существующий ID в `module_types`.
 
-### Topics
-
-| Method | Path | Auth | Body | Response.data |
-|---|---|---|---|---|
-| GET  | `/topics`        | — | — | `Topic[]` + `count` |
-| GET  | `/topics/{id}`   | — | — | `Topic[]` тем выбранного **module_id** + `count`. `{id}` — int или title модуля |
-| POST | `/createtopic`   | admin | `{ module_id, title, description }` (или `form_data`) | `Topic` |
-| POST | `/updatetopic`   | admin | `{ topic_id, module_id, title, description }` | `Topic` |
-| POST | `/deletetopic`   | admin | `{ topic_id }` | `{ id, title }` |
-
-`Topic`:
-```json
-{
-  "id": 3,
-  "module_id": 1,
-  "title": "Подключение",
-  "description": "...",
-  "module_title": "Bootstrap",
-  "module_type": {
-    "id": 1,
-    "slug": "bootstrap",
-    "name": "Bootstrap",
-    "icon": "FaBootstrap",
-    "highlight_language": "css",
-    "color": "#7952B3"
-  }
-}
-```
-
 > Поле `module_type` добавлено также в ответы `Article`, `Task` и `Test`
 > везде, где раньше присутствовало `module_title`. `module_title`
 > сохранено для обратной совместимости.
 
 ### Articles
 
-> Внимательно: `/articles/{id}` — это статьи **по `topic_id`**;
-> одиночная статья — `/article/{id}` (единственное число).
+> Одиночная статья — `/article/{id}` (единственное число).
 
 | Method | Path | Auth | Body | Response.data |
 |---|---|---|---|---|
 | GET  | `/articles`         | — | — | `Article[]` + `count` |
-| GET  | `/articles/{id}`    | — | — | `Article[]` для `topic_id = {id}` + `count` |
 | GET  | `/article/{id}`     | — | — | `Article` |
-| POST | `/createarticle`    | admin | **multipart**: `title`, `description`, `topic` (он же `topic_id`), `file` (.docx) | `Article` |
-| POST | `/updatearticle`    | admin | **multipart**: `article_id`, `title`, `description`, `topic`, `file?` (если меняем) | `Article` |
+| POST | `/createarticle`    | admin | **multipart**: `title`, `description`, `file` (.docx) | `Article` |
+| POST | `/updatearticle`    | admin | **multipart**: `article_id`, `title`, `description`, `file?` (если меняем) | `Article` |
 | POST | `/deletearticle`    | admin | `{ article_id }` | `{ id, title }` (плюс кастомное `message` про удаление файла) |
 
 `Article`:
@@ -342,8 +309,6 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
   "title": "Подключение Bootstrap",
   "description": "...",
   "module_title": "Bootstrap",
-  "topic_id": 3,
-  "topic_title": "Подключение",
   "test_id": 2,
   "test_title": "Тест по подключению",
   "task_id": null,
@@ -370,7 +335,7 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 |---|---|---|---|---|
 | GET    | `/tests`           | — | — | `Test[]` + `count` |
 | GET    | `/tests/{id}`      | — | — | `Test` |
-| POST   | `/createtest` **или** `/tests` | admin | **multipart**: `title`, `description?`, `time_limit?` (default `20`), `topic_id?`, `file` (.json) | `{ id, title, question_count, file_path }` (HTTP 201) |
+| POST   | `/createtest` **или** `/tests` | admin | **multipart**: `title`, `description?`, `time_limit?` (default `20`), `file` (.json) | `{ id, title, question_count, file_path }` (HTTP 201) |
 | POST   | `/updatetest` **или** `/updatetest/{id}` **или** `/tests/{id}` | admin | **multipart**: `test_id` (если не в URL), `title`, `description`, `time_limit`, `file?` | сырое DB-row теста |
 | DELETE | `/tests/{id}`      | admin | — | `{ id, title }` |
 
@@ -428,10 +393,7 @@ await fetch('/inseptum_backend/createarticle', { method: 'POST', body: fd });
 {
   "id": 1,
   "title": "...",
-  "description": "...",
-  "topic_id": 3,
-  "topic_title": "Подключение",
-  "module_title": "Bootstrap"
+  "description": "..."
   // плюс прочие поля таблицы tasks
 }
 ```
