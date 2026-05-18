@@ -8,6 +8,7 @@ class Article
     public int $id;
     public ?string $title;
     public ?string $description;
+    public ?int $module_id;
     public ?string $module_title;
     /** @var array<string,mixed>|null */
     public ?array $module_type;
@@ -24,7 +25,8 @@ class Article
         $a->id           = (int)($row['id'] ?? 0);
         $a->title        = isset($row['title']) ? (string)$row['title'] : null;
         $a->description  = isset($row['description']) ? (string)$row['description'] : null;
-        $a->module_title = isset($row['module_title']) ? (string)$row['module_title'] : null;
+        $a->module_id    = isset($row['module_id']) && $row['module_id'] !== null ? (int)$row['module_id'] : null;
+        $a->module_title = isset($row['module_title']) && $row['module_title'] !== null ? (string)$row['module_title'] : null;
         $a->module_type  = ModuleType::embeddedFromPrefixedRow($row);
         $a->test_id      = isset($row['test_id']) && $row['test_id'] !== null ? (int)$row['test_id'] : null;
         $a->test_title   = isset($row['test_title']) ? (string)$row['test_title'] : null;
@@ -41,6 +43,7 @@ class Article
             'id'           => $this->id,
             'title'        => $this->title,
             'description'  => $this->description,
+            'module_id'    => $this->module_id,
             'module_title' => $this->module_title,
             'module_type'  => $this->module_type,
             'test_id'      => $this->test_id,
