@@ -9,22 +9,53 @@ class TestRepository extends AbstractRepository
 {
     protected string $table = 'tests';
 
+    /**
+     * Тест с подтянутыми модулем/типом модуля и связанной статьёй (+ задачей через статью).
+     * Цепочка: tests → modules → module_types и tests ← articles → tasks.
+     */
+    /**
+     * Подзапрос: одна (минимальная по id) статья, ссылающаяся на текущий тест.
+     * Используется, чтобы избежать дублирования строк теста, если несколько
+     * статей привязаны к одному и тому же тесту.
+     */
     private const SELECT = "SELECT
-            tests.*,
-            articles.title AS article_title
+            tests.id,
+            tests.title,
+            tests.description,
+            tests.file_path,
+            tests.time_limit,
+            tests.question_count,
+            tests.created_at,
+            tests.module_id,
+            modules.title AS module_title,
+            module_types.id   AS mt_id,
+            module_types.slug AS mt_slug,
+            module_types.name AS mt_name,
+            module_types.icon AS mt_icon,
+            module_types.highlight_language AS mt_highlight_language,
+            module_types.color AS mt_color,
+            articles.id      AS article_id,
+            articles.title   AS article_title,
+            articles.task_id AS task_id,
+            tasks.title      AS task_title
         FROM tests
-        LEFT JOIN articles     ON tests.id              = articles.test_id";
+        LEFT JOIN modules      ON tests.module_id        = modules.id
+        LEFT JOIN module_types ON modules.module_type_id = module_types.id
+        LEFT JOIN articles     ON articles.id = (
+            SELECT MIN(a.id) FROM articles a WHERE a.test_id = tests.id
+        )
+        LEFT JOIN tasks        ON articles.task_id       = tasks.id";
 
     /** @return Test[] */
     public function findAll(): array
     {
-        $rows = $this->db->fetchAll(self::SELECT);
+        $rows = $this->db->fetchAll(self::SELECT . ' ORDER BY tests.id');
         return array_map([Test::class, 'fromArray'], $rows);
     }
 
     public function findOne(int $id): ?Test
     {
-        $row = $this->db->fetch(self::SELECT . ' WHERE tests.id = :id', ['id' => $id]);
+        $row = $this->db->fetch(self::SELECT . ' WHERE tests.id = :id LIMIT 1', ['id' => $id]);
         return $row === null ? null : Test::fromArray($row);
     }
 
