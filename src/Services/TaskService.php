@@ -7,16 +7,19 @@ use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
 use App\Repositories\TaskPassedRepository;
 use App\Repositories\TaskRepository;
+use App\Services\Ai\TaskCheckerService;
 
 class TaskService
 {
     private TaskRepository $repo;
     private TaskPassedRepository $passedRepo;
+    private TaskCheckerService $checker;
 
-    public function __construct(TaskRepository $repo, TaskPassedRepository $passedRepo)
+    public function __construct(TaskRepository $repo, TaskPassedRepository $passedRepo, TaskCheckerService $checker)
     {
         $this->repo       = $repo;
         $this->passedRepo = $passedRepo;
+        $this->checker    = $checker;
     }
 
     public function listAll(): array
@@ -38,43 +41,43 @@ class TaskService
     }
 
     /**
-     * Проверка решения задачи (заглушка, ранее имитировала ИИ).
-     * Возвращает массив, который контроллер сериализует в legacy-формат
-     * { success: bool, message: string }.
+     * Проверка решения задачи через AI (Claude).
+     *
+     * @return array{success:bool,message:string,details:?array,cached:bool,error_code:?string,retry_after:?int}
      */
-    public function check(int $taskId, string $userCode, ?int $userId = null, int $maxChars = 5000): array
+    public function check(int $taskId, string $userCode, ?int $userId, string $clientIp): array
     {
-        if ($taskId <= 0 || trim($userCode) === '') {
-            throw new ValidationException('Код не может быть пустым.');
-        }
-        if (mb_strlen($userCode) > $maxChars) {
-            throw new ValidationException("Код слишком длинный (макс. $maxChars симв.)");
+        if ($taskId <= 0) {
+            throw new ValidationException('Не указан taskId.');
         }
 
-        $open  = substr_count($userCode, '{');
-        $close = substr_count($userCode, '}');
-        if ($open !== $close) {
-            return [
-                'success' => false,
-                'message' => 'Ошибка синтаксиса: не совпадает количество фигурных скобок { }.',
-            ];
-        }
-
-        $task = $this->repo->findShortById($taskId);
+        $task = $this->repo->findOneWithJoins($taskId);
         if ($task === null) {
             throw new NotFoundException('Задача не найдена в базе данных.');
         }
 
-        // TODO: интеграция с ИИ (OpenAI/Anthropic/Proxy). Сейчас — мок-ответ.
-        // Если решение «успешно» и есть user_id — фиксируем прохождение задачи.
-        if ($userId !== null && $userId > 0) {
-            $this->passedRepo->markPassed($userId, $taskId);
+        // Минимальный snapshot задачи для AI-промпта.
+        $taskPayload = [
+            'id'          => (int)$task['id'],
+            'title'       => (string)($task['title'] ?? ''),
+            'description' => $task['description'] ?? null,
+            'language'    => $task['module_type']['highlight_language']
+                ?? $task['module_title']
+                ?? null,
+        ];
+
+        $result = $this->checker->check($taskPayload, $userCode, $userId, $clientIp);
+
+        // Если AI признал задачу решённой — фиксируем прохождение
+        if (!empty($result['success']) && $userId !== null && $userId > 0) {
+            try {
+                $this->passedRepo->markPassed($userId, $taskId);
+            } catch (\Throwable $e) {
+                // не валим ответ пользователю, если запись не удалась
+            }
         }
 
-        return [
-            'success' => true,
-            'message' => "ИИ проверил задачу '" . (string)$task['title'] . "': Решение корректно, логика соблюдена.",
-        ];
+        return $result;
     }
 
     public function markPassed(int $userId, int $taskId): bool
@@ -96,8 +99,6 @@ class TaskService
     }
 
     /**
-     * Список ID всех пройденных задач пользователя (batch).
-     *
      * @return array{data: int[], count: int}
      */
     public function listPassedByUser(int $userId): array

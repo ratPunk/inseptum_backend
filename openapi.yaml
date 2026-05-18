@@ -679,26 +679,6 @@ paths:
                     properties:
                       data: { $ref: '#/components/schemas/UserPublic' }
 
-  /adminlogin:
-    post:
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/LoginInput' }
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/Envelope'
-                  - type: object
-                    properties:
-                      data: { $ref: '#/components/schemas/AdminPublic' }
-
 # =====================================================================
 #                            COMPONENTS
 # =====================================================================
@@ -999,16 +979,10 @@ components:
       properties:
         user_id: { type: integer }
         username: { type: string }
-        created_at: { type: string }
-
-    AdminPublic:
-      type: object
-      properties:
-        id: { type: integer }
-        username: { type: string }
         role:
           type: string
-          enum: [admin, moderator, spectator]
+          enum: [user, spectator, moderator, admin]
+        created_at: { type: string }
 
   # ------------------ Reusable responses ------------------
   responses:

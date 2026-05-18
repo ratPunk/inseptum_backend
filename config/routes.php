@@ -7,7 +7,6 @@ declare(strict_types=1);
  * @var \App\Core\Router $router  (provided by Application::bootstrap())
  */
 
-use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FavoriteController;
@@ -84,4 +83,3 @@ $router->post('/setfavorite',      [FavoriteController::class, 'toggle']);
 // ---------- Auth (Stage 2) ----------
 $router->post('/register',         [AuthController::class, 'register']);
 $router->post('/login',            [AuthController::class, 'login']);
-$router->post('/adminlogin',       [AdminAuthController::class, 'login']);

@@ -30,6 +30,9 @@ class Application
 
     private function bootstrap(): void
     {
+        // Загружаем .env до чтения любых конфигов, которые могут на него опираться.
+        \App\Support\Env::load($this->basePath . '/.env');
+
         $dbConfig = require $this->basePath . '/config/database.php';
         $database = new Database($dbConfig);
 
@@ -38,6 +41,54 @@ class Application
         $this->container->instance(Logger::class, $this->logger);
         $this->container->instance(Database::class, $database);
         $this->container->instance(Application::class, $this);
+
+        // Конфиг AI отдаём в DI как именованный инстанс (массив).
+        $aiConfigFile = $this->basePath . '/config/ai.php';
+        $aiConfig = is_file($aiConfigFile) ? (array)require $aiConfigFile : [];
+        $this->container->instance('ai.config', $aiConfig);
+
+        // Регистрируем AI-сервисы, которым в конструктор нужен массив-конфиг
+        // (контейнер не умеет авто-резолвить скаляры).
+        $container = $this->container;
+        $logger    = $this->logger;
+        $container->bind(\App\Services\Ai\SolutionGuard::class, static function () use ($aiConfig) {
+            return new \App\Services\Ai\SolutionGuard($aiConfig);
+        });
+        $container->bind(\App\Services\Ai\PromptBuilder::class, static function () {
+            return new \App\Services\Ai\PromptBuilder();
+        });
+        $container->bind(\App\Services\Ai\ClaudeHubClient::class, static function ($c) use ($aiConfig, $logger) {
+            return new \App\Services\Ai\ClaudeHubClient($aiConfig, $logger);
+        });
+        $container->bind(\App\Services\Ai\ResponseParser::class, static function () {
+            return new \App\Services\Ai\ResponseParser();
+        });
+        $container->bind(\App\Services\Ai\RateLimiter::class, static function ($c) use ($aiConfig) {
+            return new \App\Services\Ai\RateLimiter(
+                $c->get(\App\Repositories\AiRateLimitRepository::class),
+                $aiConfig
+            );
+        });
+        $container->bind(\App\Services\Ai\CircuitBreaker::class, static function ($c) use ($aiConfig) {
+            return new \App\Services\Ai\CircuitBreaker(
+                $c->get(\App\Repositories\AiAuditRepository::class),
+                $aiConfig
+            );
+        });
+        $container->bind(\App\Services\Ai\TaskCheckerService::class, static function ($c) use ($aiConfig, $logger) {
+            return new \App\Services\Ai\TaskCheckerService(
+                $aiConfig,
+                $c->get(\App\Services\Ai\SolutionGuard::class),
+                $c->get(\App\Services\Ai\PromptBuilder::class),
+                $c->get(\App\Services\Ai\ClaudeHubClient::class),
+                $c->get(\App\Services\Ai\ResponseParser::class),
+                $c->get(\App\Services\Ai\RateLimiter::class),
+                $c->get(\App\Services\Ai\CircuitBreaker::class),
+                $c->get(\App\Repositories\AiCacheRepository::class),
+                $c->get(\App\Repositories\AiAuditRepository::class),
+                $logger
+            );
+        });
 
         $basePath = $this->basePath;
         $logger   = $this->logger;

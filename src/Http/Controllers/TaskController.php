@@ -40,8 +40,13 @@ class TaskController extends AbstractController
         $taskId = (int)$request->input('taskId', 0);
         $code   = (string)$request->input('code', '');
         $userId = (int)$request->input('user_id', 0) ?: null;
-        $payload = $this->service->check($taskId, $code, $userId);
-        // Отдаём в legacy-формате — не оборачиваем в success/data.
+
+        // IP клиента (учитываем reverse proxy, но без слепого доверия XFF).
+        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+
+        $payload = $this->service->check($taskId, $code, $userId, $ip);
+
+        // Legacy-формат (success/message) + расширенные поля (details/cached/error_code/retry_after).
         return new JsonResponse($payload, 200);
     }
 
