@@ -523,6 +523,72 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/CheckTaskResult' }
 
+  /createtask:
+    post:
+      tags: [Tasks]
+      summary: Создать задачу (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskOne' }
+        '400': { $ref: '#/components/responses/Error' }
+
+  /updatetask:
+    post:
+      tags: [Tasks]
+      summary: Обновить задачу (admin). ID берётся из body (id или task_id).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /updatetask/{id}:
+    post:
+      tags: [Tasks]
+      summary: Обновить задачу (admin) по ID из пути.
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/TaskOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /deletetask:
+    post:
+      tags: [Tasks]
+      summary: Удалить задачу (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /deletetask/{id}:
+    delete:
+      tags: [Tasks]
+      summary: Удалить задачу (admin) по ID из пути.
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+        '404': { $ref: '#/components/responses/Error' }
+
   /setpassedtask:
     post:
       tags: [TaskPassing]
@@ -678,6 +744,102 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: '#/components/schemas/UserPublic' }
+
+  # ---------------- Users (admin CRUD) ----------------
+  /users:
+    get:
+      tags: [Auth]
+      summary: Список пользователей (admin)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/UserAdminPublic' }
+                      count: { type: integer }
+
+  /users/{id}:
+    get:
+      tags: [Auth]
+      summary: Получить пользователя по id (admin)
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/UserAdminOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /createuser:
+    post:
+      tags: [Auth]
+      summary: Создать пользователя (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserCreateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/UserAdminOne' }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+
+  /updateuser:
+    post:
+      tags: [Auth]
+      summary: Обновить пользователя (admin). ID берётся из body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/UserAdminOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /updateuser/{id}:
+    post:
+      tags: [Auth]
+      summary: Обновить пользователя (admin) по ID из пути.
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UserUpdateInput' }
+      responses:
+        '200': { $ref: '#/components/responses/UserAdminOne' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /deleteuser:
+    post:
+      tags: [Auth]
+      summary: Удалить пользователя (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: integer }
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+        '404': { $ref: '#/components/responses/Error' }
+
+  /deleteuser/{id}:
+    delete:
+      tags: [Auth]
+      summary: Удалить пользователя (admin) по ID из пути.
+      parameters: [{ $ref: '#/components/parameters/IdInt' }]
+      responses:
+        '200': { $ref: '#/components/responses/DeleteAck' }
+        '404': { $ref: '#/components/responses/Error' }
 
 # =====================================================================
 #                            COMPONENTS
@@ -984,6 +1146,59 @@ components:
           enum: [user, spectator, moderator, admin]
         created_at: { type: string }
 
+    # Admin CRUD shape — uses `id` (not user_id) and never exposes the password.
+    UserAdminPublic:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string }
+        role:
+          type: string
+          enum: [user, spectator, moderator, admin]
+        created_at: { type: string, nullable: true }
+
+    UserCreateInput:
+      type: object
+      required: [username, password, role]
+      properties:
+        username: { type: string, minLength: 3, maxLength: 20 }
+        password: { type: string, minLength: 3 }
+        role:
+          type: string
+          enum: [user, spectator, moderator, admin]
+
+    # All fields optional; password is only re-hashed when non-empty.
+    UserUpdateInput:
+      type: object
+      properties:
+        id: { type: integer }
+        username: { type: string, minLength: 3, maxLength: 20 }
+        password: { type: string, minLength: 3, nullable: true }
+        role:
+          type: string
+          enum: [user, spectator, moderator, admin]
+
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, maxLength: 255 }
+        description: { type: string, nullable: true }
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+          default: medium
+
+    TaskUpdateInput:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string, maxLength: 255 }
+        description: { type: string, nullable: true }
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+
   # ------------------ Reusable responses ------------------
   responses:
     Error:
@@ -1057,6 +1272,17 @@ components:
               - type: object
                 properties:
                   data: { $ref: '#/components/schemas/Task' }
+
+    UserAdminOne:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserAdminPublic' }
 
     BoolEnvelope:
       description: Булев ответ в data

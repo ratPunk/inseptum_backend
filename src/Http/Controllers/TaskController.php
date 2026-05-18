@@ -32,6 +32,53 @@ class TaskController extends AbstractController
         return $this->success($task, 'Задача найдена', 200);
     }
 
+    public function create(Request $request, array $params): JsonResponse
+    {
+        $payload = $this->extractFormData($request);
+        $task    = $this->service->create($payload);
+        return $this->success($task, 'Задача успешно создана', 200);
+    }
+
+    public function update(Request $request, array $params): JsonResponse
+    {
+        $payload = $this->extractFormData($request);
+        $id = (int)($params['id']
+            ?? $payload['id']
+            ?? $payload['task_id']
+            ?? $request->input('id', 0));
+        if ($id <= 0) {
+            return $this->error('Не указан ID задачи', 400);
+        }
+        $task = $this->service->update($id, $payload);
+        return $this->success($task, 'Задача успешно обновлена', 200);
+    }
+
+    public function delete(Request $request, array $params): JsonResponse
+    {
+        $id = (int)($params['id']
+            ?? $request->input('id', 0)
+            ?? $request->input('task_id', 0));
+        if ($id <= 0) {
+            return $this->error('Не указан ID задачи', 400);
+        }
+        $data = $this->service->delete($id);
+        return $this->success($data, 'Задача успешно удалена', 200);
+    }
+
+    /**
+     * Accepts either:
+     *   - { "form_data": { ... } }  (legacy front)
+     *   - flat body: { ... }
+     */
+    private function extractFormData(Request $request): array
+    {
+        $formData = $request->input('form_data');
+        if (is_array($formData) && !empty($formData)) {
+            return $formData;
+        }
+        return $request->input() ?: [];
+    }
+
     /**
      * POST /checktask — проверка решения задачи (legacy формат: {success, message}).
      */

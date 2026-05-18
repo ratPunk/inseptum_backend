@@ -8,18 +8,65 @@ use App\Exceptions\ValidationException;
 use App\Repositories\TaskPassedRepository;
 use App\Repositories\TaskRepository;
 use App\Services\Ai\TaskCheckerService;
+use App\Validators\TaskValidator;
 
 class TaskService
 {
     private TaskRepository $repo;
     private TaskPassedRepository $passedRepo;
     private TaskCheckerService $checker;
+    private TaskValidator $validator;
 
-    public function __construct(TaskRepository $repo, TaskPassedRepository $passedRepo, TaskCheckerService $checker)
-    {
+    public function __construct(
+        TaskRepository $repo,
+        TaskPassedRepository $passedRepo,
+        TaskCheckerService $checker,
+        TaskValidator $validator
+    ) {
         $this->repo       = $repo;
         $this->passedRepo = $passedRepo;
         $this->checker    = $checker;
+        $this->validator  = $validator;
+    }
+
+    public function create(array $input): array
+    {
+        $clean = $this->validator->validateCreate($input);
+        $id    = $this->repo->create($clean['title'], $clean['description'], $clean['difficulty']);
+        $row   = $this->repo->findOneWithJoins($id);
+        if ($row === null) {
+            throw new NotFoundException('Не удалось получить созданную задачу');
+        }
+        return $row;
+    }
+
+    public function update(int $id, array $input): array
+    {
+        if ($id <= 0) {
+            throw new ValidationException('Не указан ID задачи');
+        }
+        if (!$this->repo->exists($id)) {
+            throw new NotFoundException("Задача с ID $id не найдена");
+        }
+        $clean = $this->validator->validateUpdate($input);
+        if (!empty($clean)) {
+            $this->repo->update($id, $clean);
+        }
+        $row = $this->repo->findOneWithJoins($id);
+        return $row ?? [];
+    }
+
+    public function delete(int $id): array
+    {
+        if ($id <= 0) {
+            throw new ValidationException('Не указан ID задачи');
+        }
+        $row = $this->repo->findOneWithJoins($id);
+        if ($row === null) {
+            throw new NotFoundException("Задача с ID $id не найдена");
+        }
+        $this->repo->delete($id);
+        return ['id' => (int)$row['id'], 'title' => (string)($row['title'] ?? '')];
     }
 
     public function listAll(): array

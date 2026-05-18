@@ -79,4 +79,60 @@ class TaskRepository extends AbstractRepository
         $row['test_id']    = isset($row['test_id']) && $row['test_id'] !== null ? (int)$row['test_id'] : null;
         return $row;
     }
+
+    // -----------------------------------------------------------------
+    //                          CRUD (admin)
+    // -----------------------------------------------------------------
+
+    public function exists(int $id): bool
+    {
+        $row = $this->db->fetch('SELECT id FROM `tasks` WHERE id = :id', ['id' => $id]);
+        return $row !== null;
+    }
+
+    /**
+     * Insert a new task. `description` may be null.
+     */
+    public function create(string $title, ?string $description, string $difficulty): int
+    {
+        $this->db->execute(
+            'INSERT INTO `tasks` (`title`, `description`, `difficulty`)
+             VALUES (:title, :description, :difficulty)',
+            [
+                'title'       => $title,
+                'description' => $description,
+                'difficulty'  => $difficulty,
+            ]
+        );
+        return (int)$this->db->lastInsertId();
+    }
+
+    /**
+     * Partial update. Only whitelisted columns are applied.
+     *
+     * @param array<string,mixed> $fields  Allowed keys: title, description, difficulty.
+     */
+    public function update(int $id, array $fields): int
+    {
+        $allowed = ['title', 'description', 'difficulty'];
+        $set = [];
+        $params = ['id' => $id];
+        foreach ($fields as $col => $value) {
+            if (!in_array($col, $allowed, true)) {
+                continue;
+            }
+            $set[] = "`$col` = :$col";
+            $params[$col] = $value;
+        }
+        if (empty($set)) {
+            return 0;
+        }
+        $sql = 'UPDATE `tasks` SET ' . implode(', ', $set) . ' WHERE id = :id';
+        return $this->db->execute($sql, $params);
+    }
+
+    public function delete(int $id): int
+    {
+        return $this->db->execute('DELETE FROM `tasks` WHERE id = :id', ['id' => $id]);
+    }
 }

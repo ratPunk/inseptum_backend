@@ -14,6 +14,7 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ModuleTypeController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\UserController;
 
 // ---------- Module Types ----------
 $router->get('/module-types',           [ModuleTypeController::class, 'index']);
@@ -70,6 +71,12 @@ $router->post('/getpassedtests',   [TestController::class, 'getPassedList']);
 $router->get('/tasks',             [TaskController::class, 'index']);
 $router->get('/tasks/{id}',        [TaskController::class, 'show']);
 $router->post('/checktask',        [TaskController::class, 'check']);
+$router->post('/createtask',       [TaskController::class, 'create']);
+$router->post('/updatetask',       [TaskController::class, 'update']);
+$router->post('/updatetask/{id}',  [TaskController::class, 'update']);
+$router->post('/deletetask',       [TaskController::class, 'delete']);
+$router->post('/deletetask/{id}',  [TaskController::class, 'delete']);
+$router->delete('/deletetask/{id}',[TaskController::class, 'delete']);
 // Прохождение задач:
 $router->post('/setpassedtask',    [TaskController::class, 'setPassed']);
 $router->post('/getpassedtask',    [TaskController::class, 'getPassed']);
@@ -83,3 +90,13 @@ $router->post('/setfavorite',      [FavoriteController::class, 'toggle']);
 // ---------- Auth (Stage 2) ----------
 $router->post('/register',         [AuthController::class, 'register']);
 $router->post('/login',            [AuthController::class, 'login']);
+
+// ---------- Users (admin CRUD) ----------
+$router->get('/users',             [UserController::class, 'index']);
+$router->get('/users/{id}',        [UserController::class, 'show']);
+$router->post('/createuser',       [UserController::class, 'create']);
+$router->post('/updateuser',       [UserController::class, 'update']);
+$router->post('/updateuser/{id}',  [UserController::class, 'update']);
+$router->post('/deleteuser',       [UserController::class, 'delete']);
+$router->post('/deleteuser/{id}',  [UserController::class, 'delete']);
+$router->delete('/deleteuser/{id}',[UserController::class, 'delete']);
