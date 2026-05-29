@@ -1,0 +1,99 @@
+name: Deploy Backend (FTP)
+
+# Положи этот файл в репозиторий backend по пути:
+#   .github/workflows/deploy.yml
+#
+# Деплоит PHP-бэкенд (inseptum_backend) на api.inseptum.ru через FTP.
+# Делает composer install --no-dev на раннере (а не на сервере), потому что
+# на shared-хостинге часто нет SSH/composer. Готовые vendor/ заливаются вместе с кодом.
+#
+# Триггеры: push в main + ручной запуск.
+#
+# Требуемые GitHub Secrets (в репозитории backend):
+#   FTP_SERVER   -> хост FTP (IP или домен)
+#   FTP_USERNAME -> логин FTP
+#   FTP_PASSWORD -> пароль FTP
+#   FTP_BACK_DIR -> путь к папке бэка на сервере, с / на конце
+#                   например: /var/www/www-root/data/www/api.inseptum.ru/
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          # Подгони расширения под свой composer.json (если нужны mbstring/intl/pdo_mysql и т.д.)
+          extensions: mbstring, intl, pdo_mysql, fileinfo, zip
+
+      - name: Cache composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install PHP dependencies (production)
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      - name: Prepare deploy folder
+        # Собираем чистую папку для деплоя — без .git, тестов, node_modules и прочего мусора.
+        # ВАЖНО: .env на сервере НЕ перезаписываем (см. exclude в FTP-степе).
+        run: |
+          mkdir -p _deploy
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='tests' \
+            --exclude='node_modules' \
+            --exclude='_deploy' \
+            --exclude='docker' \
+            --exclude='docker-compose*.yml' \
+            --exclude='Dockerfile*' \
+            --exclude='README*' \
+            --exclude='*.md' \
+            --exclude='phpunit*.xml' \
+            --exclude='.phpunit.*' \
+            ./ _deploy/
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ secrets.FTP_BACK_DIR }}
+          local-dir: ./_deploy/
+          # Если хостинг умеет FTPS — раскомментируй:
+          # protocol: ftps
+          log-level: standard
+          # КРИТИЧНО: не трогать на сервере пользовательские данные и .env
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env
+            **/articlesFolder/**
+            **/testsFolder/**
+            **/uploads/**
+            **/storage/**

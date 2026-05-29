@@ -30,8 +30,12 @@ class Application
 
     private function bootstrap(): void
     {
+        // Определяем окружение: APP_ENV может быть задана на уровне сервера/хостинга.
+        $appEnv  = getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? '');
+        $envFile = $appEnv !== '' ? "/.env.{$appEnv}" : '/.env';
+
         // Загружаем .env до чтения любых конфигов, которые могут на него опираться.
-        \App\Support\Env::load($this->basePath . '/.env');
+        \App\Support\Env::load($this->basePath . $envFile);
 
         $dbConfig = require $this->basePath . '/config/database.php';
         $database = new Database($dbConfig);
