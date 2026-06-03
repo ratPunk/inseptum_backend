@@ -21,7 +21,8 @@ class User
      */
     public function findByLogin(string $login): ?array
     {
-        $stmt = $this->db->prepare('SELECT id, name, login, password, created_at FROM users WHERE login = ? LIMIT 1');
+        // Use IFNULL as a fallback in case the role column doesn't exist yet
+        $stmt = $this->db->prepare('SELECT id, name, login, password, IFNULL(role, "user") AS role, created_at FROM users WHERE login = ? LIMIT 1');
         $stmt->execute([$login]);
         $user = $stmt->fetch();
 
@@ -33,7 +34,7 @@ class User
      */
     public function findById(int $id): ?array
     {
-        $stmt = $this->db->prepare('SELECT id, name, login, created_at FROM users WHERE id = ? LIMIT 1');
+        $stmt = $this->db->prepare('SELECT id, name, login, IFNULL(role, "user") AS role, created_at FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $user = $stmt->fetch();
 

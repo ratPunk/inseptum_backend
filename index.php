@@ -61,13 +61,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 use App\Core\Router;
 use App\Controllers\AuthController;
+use App\Controllers\CategoryController;
+use App\Controllers\ArticleController;
 
 $router = new Router();
 
+// Auth
 $router->post('/api/auth/register', [AuthController::class, 'register']);
 $router->post('/api/auth/login',    [AuthController::class, 'login']);
 $router->get('/api/auth/me',        [AuthController::class, 'me']);
 $router->post('/api/auth/logout',   [AuthController::class, 'logout']);
+
+// Categories
+$router->get('/api/categories',            [CategoryController::class, 'index']);
+$router->get('/api/categories/{id}',       [CategoryController::class, 'show']);
+$router->post('/api/categories',           [CategoryController::class, 'create']);
+$router->put('/api/categories/{id}',       [CategoryController::class, 'update']);
+$router->delete('/api/categories/{id}',    [CategoryController::class, 'delete']);
+
+// Articles
+$router->get('/api/articles',                           [ArticleController::class, 'index']);
+$router->get('/api/articles/{id}',                      [ArticleController::class, 'show']);
+$router->get('/api/articles/{id}/content',              [ArticleController::class, 'content']);
+$router->get('/api/articles/{id}/toc',                  [ArticleController::class, 'toc']);
+$router->get('/api/articles/images/{articleId}/{filename}', [ArticleController::class, 'serveImage']);
+$router->post('/api/articles',                          [ArticleController::class, 'create']);
+$router->put('/api/articles/{id}',                      [ArticleController::class, 'update']);
+$router->delete('/api/articles/{id}',                   [ArticleController::class, 'delete']);
 
 // Health check
 $router->get('/api/health', function () {
