@@ -64,6 +64,7 @@ use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
 use App\Controllers\ArticleController;
+use App\Controllers\AdminArticleController;
 
 $router = new Router();
 
@@ -93,6 +94,14 @@ $router->get('/api/articles/images/{articleId}/{filename}', [ArticleController::
 $router->post('/api/articles',                          [ArticleController::class, 'create']);
 $router->put('/api/articles/{id}',                      [ArticleController::class, 'update']);
 $router->delete('/api/articles/{id}',                   [ArticleController::class, 'delete']);
+
+// Admin Articles (with filtering, sorting, pagination)
+$router->get('/api/admin/articles',       [AdminArticleController::class, 'index']);
+$router->get('/api/admin/articles/{id}', [AdminArticleController::class, 'show']);
+$router->post('/api/admin/articles',     [AdminArticleController::class, 'create']);
+$router->put('/api/admin/articles/{id}', [AdminArticleController::class, 'update']);
+$router->delete('/api/admin/articles/{id}', [AdminArticleController::class, 'delete']);
+$router->get('/api/admin/categories',    [AdminArticleController::class, 'categories']);
 
 // Health check
 $router->get('/api/health', function () {
