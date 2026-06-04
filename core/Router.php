@@ -7,6 +7,7 @@ namespace App\Core;
 class Router
 {
     private array $routes = [];
+    private ?Logger $logger = null;
 
     /**
      * Register a GET route.
@@ -40,6 +41,14 @@ class Router
         $this->addRoute('DELETE', $path, $handler);
     }
 
+    /**
+     * Set logger instance for request logging.
+     */
+    public function setLogger(Logger $logger): void
+    {
+        $this->logger = $logger;
+    }
+
     private function addRoute(string $method, string $path, callable|array $handler): void
     {
         $this->routes[] = [
@@ -65,6 +74,11 @@ class Router
 
         $uri = '/' . trim($uri, '/');
 
+        // Log incoming request
+        if ($this->logger !== null) {
+            $this->logger->logRequest($method, $uri, $_REQUEST);
+        }
+
         foreach ($this->routes as $route) {
             if ($route['method'] !== $method) {
                 continue;
@@ -75,6 +89,11 @@ class Router
                 $this->callHandler($route['handler'], $params);
                 return;
             }
+        }
+
+        // Log 404
+        if ($this->logger !== null) {
+            $this->logger->error("Route not found: {$method} {$uri}");
         }
 
         http_response_code(404);

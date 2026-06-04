@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Logger;
 use App\Models\Article;
 use App\Models\Category;
 
@@ -12,6 +13,7 @@ class ArticleController extends Controller
 {
     private Article  $articleModel;
     private Category $categoryModel;
+    private Logger    $logger;
 
     private const STORAGE_PATH = __DIR__ . '/../storage/articles';
 
@@ -23,6 +25,7 @@ class ArticleController extends Controller
     {
         $this->articleModel  = new Article();
         $this->categoryModel = new Category();
+        $this->logger        = Logger::getInstance();
     }
 
     // GET /api/articles?category_id=1
@@ -48,8 +51,15 @@ class ArticleController extends Controller
 
         $article = $this->articleModel->findById($id);
         if (!$article) {
+            $this->logger->article('Article view failed: not found', ['article_id' => $id]);
             $this->error('Article not found', 404);
         }
+
+        $this->logger->article('Article viewed', [
+            'article_id' => $id,
+            'title' => $article['title'],
+            'category_id' => $article['category_id']
+        ]);
 
         $this->json(['article' => $article]);
     }
@@ -64,12 +74,17 @@ class ArticleController extends Controller
 
         $article = $this->articleModel->findById($id);
         if (!$article) {
+            $this->logger->article('Article content read failed: not found', ['article_id' => $id]);
             $this->error('Article not found', 404);
         }
 
         $filepath = self::STORAGE_PATH . '/' . $article['filename'];
 
         if (!file_exists($filepath)) {
+            $this->logger->article('Article content read failed: file missing', [
+                'article_id' => $id,
+                'filename' => $article['filename']
+            ]);
             $this->error('DOCX file not found on server', 404);
         }
 
@@ -81,6 +96,14 @@ class ArticleController extends Controller
         // Generate TOC first, then HTML (both use same slugify function with consistent state)
         $toc  = $this->buildToc($docxData);
         $html = $this->renderSemanticHtml($docxData, $article['id']);
+
+        // Log successful content read
+        $this->logger->article('Article content read', [
+            'article_id' => $id,
+            'title' => $article['title'],
+            'word_count' => $docxData['wordCount'] ?? 0,
+            'toc_items' => count($toc)
+        ]);
 
         $this->json([
             'article'   => $article,
@@ -139,6 +162,13 @@ class ArticleController extends Controller
         $id = $this->articleModel->create($title, $description ?: null, $filename, $categoryId);
         $article = $this->articleModel->findById($id);
 
+        $this->logger->article('Article created', [
+            'article_id' => $id,
+            'title' => $title,
+            'category_id' => $categoryId,
+            'filename' => $filename
+        ]);
+
         $this->json(['message' => 'Article created', 'article' => $article], 201);
     }
 
@@ -188,6 +218,7 @@ class ArticleController extends Controller
 
         $article = $this->articleModel->findById($id);
         if (!$article) {
+            $this->logger->article('Article delete failed: not found', ['article_id' => $id]);
             $this->error('Article not found', 404);
         }
 
@@ -197,6 +228,12 @@ class ArticleController extends Controller
         }
 
         $this->articleModel->delete($id);
+
+        $this->logger->article('Article deleted', [
+            'article_id' => $id,
+            'title' => $article['title']
+        ]);
+
         $this->json(['message' => 'Article deleted']);
     }
 

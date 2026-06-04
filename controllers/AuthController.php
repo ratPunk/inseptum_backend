@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Logger;
 use App\Models\User;
 use App\Helpers\JwtHelper;
 
@@ -12,11 +13,13 @@ class AuthController extends Controller
 {
     private User      $userModel;
     private JwtHelper $jwt;
+    private Logger    $logger;
 
     public function __construct()
     {
         $this->userModel = new User();
         $this->jwt       = new JwtHelper();
+        $this->logger    = Logger::getInstance();
     }
 
     // -------------------------------------------------------------------------
@@ -49,6 +52,7 @@ class AuthController extends Controller
         }
 
         if ($this->userModel->loginExists($login)) {
+            $this->logger->auth('Registration failed: login already taken', ['login' => $login]);
             $this->error('Login is already taken', 409);
         }
 
@@ -56,6 +60,13 @@ class AuthController extends Controller
         $user   = $this->userModel->findById($userId);
 
         $token = $this->jwt->generate(['sub' => $userId, 'login' => $login]);
+
+        // Log successful registration
+        $this->logger->auth('User registered', [
+            'user_id' => $userId,
+            'login' => $login,
+            'name' => $name
+        ]);
 
         // Strip password from response
         unset($user['password']);
@@ -87,10 +98,18 @@ class AuthController extends Controller
 
         // Use a generic message to avoid user enumeration
         if (!$user || !$this->userModel->verifyPassword($password, $user['password'])) {
+            $this->logger->auth('Login failed: invalid credentials', ['login' => $login]);
             $this->error('Invalid login or password', 401);
         }
 
         $token = $this->jwt->generate(['sub' => $user['id'], 'login' => $user['login']]);
+
+        // Log successful login
+        $this->logger->auth('User logged in', [
+            'user_id' => $user['id'],
+            'login' => $login,
+            'role' => $user['role'] ?? 'user'
+        ]);
 
         // Strip password from response
         unset($user['password']);
@@ -112,14 +131,21 @@ class AuthController extends Controller
         $payload = $token ? $this->jwt->verify($token) : null;
 
         if (!$payload) {
+            $this->logger->auth('Get user failed: invalid token');
             $this->error('Unauthorized', 401);
         }
 
         $user = $this->userModel->findById((int)$payload['sub']);
 
         if (!$user) {
+            $this->logger->auth('Get user failed: user not found', ['user_id' => $payload['sub']]);
             $this->error('User not found', 404);
         }
+
+        $this->logger->auth('User profile accessed', [
+            'user_id' => $user['id'],
+            'login' => $user['login']
+        ]);
 
         $this->json(['user' => $user]);
     }
@@ -131,6 +157,16 @@ class AuthController extends Controller
     // -------------------------------------------------------------------------
     public function logout(array $params = []): void
     {
+        $token   = $this->jwt->fromHeader();
+        $payload = $token ? $this->jwt->verify($token) : null;
+
+        if ($payload) {
+            $this->logger->auth('User logged out', [
+                'user_id' => $payload['sub'] ?? 'unknown',
+                'login' => $payload['login'] ?? 'unknown'
+            ]);
+        }
+
         $this->json(['message' => 'Logged out successfully']);
     }
 }

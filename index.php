@@ -58,13 +58,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── Logger ─────────────────────────────────────────────────────────────────
+use App\Core\Logger;
 use App\Core\Router;
 use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
 use App\Controllers\ArticleController;
 
 $router = new Router();
+
+// Initialize logger for request logging
+$logger = Logger::getInstance();
+$router->setLogger($logger);
 
 // Auth
 $router->post('/api/auth/register', [AuthController::class, 'register']);
