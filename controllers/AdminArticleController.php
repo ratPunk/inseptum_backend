@@ -206,27 +206,74 @@ class AdminArticleController extends Controller
         $this->error('Only .docx files are allowed', 422);
     }
 
-    if (!is_dir(self::STORAGE_PATH)) {
-        mkdir(self::STORAGE_PATH, 0777, true);
+    $storagePath = self::STORAGE_PATH;
+    $dirExists   = is_dir($storagePath);
+    $dirWritable = $dirExists && is_writable($storagePath);
+
+    if (!$dirExists) {
+        $mkdirResult = mkdir($storagePath, 0777, true);
+        $dirExists   = $mkdirResult;
+        $dirWritable = $mkdirResult && is_writable($storagePath);
     }
 
     $uniqueName  = uniqid('article_', true) . '.docx';
-    $destination = self::STORAGE_PATH . '/' . $uniqueName;
+    $destination = $storagePath . '/' . $uniqueName;
+
+    $tmpName      = $file['tmp_name'] ?? '';
+    $tmpExists    = $tmpName !== '' && file_exists($tmpName);
+    $tmpReadable  = $tmpExists && is_readable($tmpName);
+    $isUploaded   = $tmpExists && is_uploaded_file($tmpName);
+
+    // Log full diagnostics before attempting move
+    $this->logger->article('Upload attempt', [
+        'original_name'       => $file['name'] ?? '',
+        'upload_error_code'   => $file['error'] ?? 'n/a',
+        'tmp_name'            => $tmpName,
+        'tmp_exists'          => $tmpExists,
+        'tmp_readable'        => $tmpReadable,
+        'is_uploaded_file'    => $isUploaded,
+        'tmp_size_bytes'      => $tmpExists ? filesize($tmpName) : null,
+        'storage_path'        => $storagePath,
+        'storage_dir_exists'  => $dirExists,
+        'storage_writable'    => $dirWritable,
+        'destination'         => $destination,
+        'php_upload_tmp_dir'  => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size'       => ini_get('post_max_size'),
+        'process_user'        => function_exists('posix_getpwuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown') : 'n/a',
+    ]);
 
     // move_uploaded_file fails on Windows/MAMP when PHP upload_tmp_dir
     // is on a different drive from the storage path (cross-drive rename).
     // Fall back to copy() + unlink() which works across drives.
-    $moved = move_uploaded_file($file['tmp_name'], $destination);
+    error_clear_last();
+    $moved = move_uploaded_file($tmpName, $destination);
 
     if (!$moved) {
-        if (is_uploaded_file($file['tmp_name']) && copy($file['tmp_name'], $destination)) {
-            @unlink($file['tmp_name']);
+        $moveError = error_get_last();
+
+        $this->logger->error('move_uploaded_file failed', [
+            'tmp_name'    => $tmpName,
+            'destination' => $destination,
+            'php_error'   => $moveError,
+        ]);
+
+        error_clear_last();
+        $copied = $isUploaded && copy($tmpName, $destination);
+
+        if ($copied) {
+            @unlink($tmpName);
+            $this->logger->article('Fallback copy() succeeded', ['destination' => $destination]);
         } else {
-            $this->logger->error('Failed to save uploaded file', [
-                'tmp_name'     => $file['tmp_name'],
-                'destination'  => $destination,
-                'upload_error' => $file['error'] ?? 'unknown',
-                'php_error'    => error_get_last(),
+            $copyError = error_get_last();
+            $this->logger->error('copy() fallback also failed', [
+                'tmp_name'           => $tmpName,
+                'destination'        => $destination,
+                'is_uploaded_file'   => $isUploaded,
+                'copy_result'        => $copied,
+                'php_error'          => $copyError,
+                'storage_writable'   => is_writable($storagePath),
+                'dest_parent_exists' => is_dir(dirname($destination)),
             ]);
             $this->error('Failed to save uploaded file', 500);
         }
