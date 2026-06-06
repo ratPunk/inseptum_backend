@@ -66,6 +66,8 @@ use App\Controllers\CategoryController;
 use App\Controllers\ArticleController;
 use App\Controllers\AdminArticleController;
 use App\Controllers\AdminUserController;
+use App\Controllers\TestController;
+use App\Controllers\AdminTestController;
 
 $router = new Router();
 
@@ -118,5 +120,23 @@ $router->get('/api/health', function () {
     echo json_encode(['status' => 'ok', 'time' => date('c')]);
     exit;
 });
+
+// Tests
+$router->get('/api/tests',                      [TestController::class, 'index']);
+$router->get('/api/tests/{id}',                 [TestController::class, 'show']);
+$router->get('/api/tests/{id}/content',         [TestController::class, 'content']);
+$router->post('/api/tests/{id}/start',          [TestController::class, 'start']);
+$router->post('/api/tests/{id}/submit',         [TestController::class, 'submit']);
+$router->get('/api/tests/{id}/progress',        [TestController::class, 'progress']);
+$router->get('/api/user/tests-progress',        [TestController::class, 'userProgress']);
+
+// Admin Tests
+$router->get('/api/admin/tests',                      [AdminTestController::class, 'index']);
+$router->get('/api/admin/tests/{id}',                 [AdminTestController::class, 'show']);
+$router->get('/api/admin/tests/{id}/download',        [AdminTestController::class, 'download']);
+$router->post('/api/admin/tests',                     [AdminTestController::class, 'create']);
+$router->post('/api/admin/tests/{id}',                [AdminTestController::class, 'update']);
+$router->put('/api/admin/tests/{id}',                 [AdminTestController::class, 'update']);
+$router->delete('/api/admin/tests/{id}',              [AdminTestController::class, 'delete']);
 
 $router->dispatch();
