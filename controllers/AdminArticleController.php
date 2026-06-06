@@ -200,24 +200,38 @@ class AdminArticleController extends Controller
     // ─── Private helpers ──────────────────────────────────────────────────
 
     private function uploadDocx(array $file): string
-    {
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if ($ext !== 'docx') {
-            $this->error('Only .docx files are allowed', 422);
-        }
+{
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if ($ext !== 'docx') {
+        $this->error('Only .docx files are allowed', 422);
+    }
 
-        $uniqueName = uniqid('article_', true) . '.docx';
+    if (!is_dir(self::STORAGE_PATH)) {
+        mkdir(self::STORAGE_PATH, 0777, true);
+    }
 
-        if (!is_dir(self::STORAGE_PATH)) {
-            mkdir(self::STORAGE_PATH, 0777, true);
-        }
+    $uniqueName  = uniqid('article_', true) . '.docx';
+    $destination = self::STORAGE_PATH . '/' . $uniqueName;
 
-        $destination = self::STORAGE_PATH . '/' . $uniqueName;
+    // move_uploaded_file fails on Windows/MAMP when PHP upload_tmp_dir
+    // is on a different drive from the storage path (cross-drive rename).
+    // Fall back to copy() + unlink() which works across drives.
+    $moved = move_uploaded_file($file['tmp_name'], $destination);
 
-        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+    if (!$moved) {
+        if (is_uploaded_file($file['tmp_name']) && copy($file['tmp_name'], $destination)) {
+            @unlink($file['tmp_name']);
+        } else {
+            $this->logger->error('Failed to save uploaded file', [
+                'tmp_name'     => $file['tmp_name'],
+                'destination'  => $destination,
+                'upload_error' => $file['error'] ?? 'unknown',
+                'php_error'    => error_get_last(),
+            ]);
             $this->error('Failed to save uploaded file', 500);
         }
-
-        return $uniqueName;
     }
+
+    return $uniqueName;
+}
 }
