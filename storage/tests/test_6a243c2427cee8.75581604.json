@@ -1,0 +1,120 @@
+{
+  "id": 1,
+  "title": "Основы HTML",
+  "description": "Проверьте знание базовых тегов и атрибутов HTML. Один правильный ответ на каждый вопрос.",
+  "type": "single_choice",
+  "time_limit": 600,
+  "passing_score": 70,
+  "questions": [
+    {
+      "id": 1,
+      "text": "Какой тег используется для создания гиперссылки?",
+      "options": [
+        {"id": "a", "text": "<link>"},
+        {"id": "b", "text": "<a>"},
+        {"id": "c", "text": "<href>"},
+        {"id": "d", "text": "<url>"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 2,
+      "text": "Какой атрибут задаёт альтернативный текст для изображения?",
+      "options": [
+        {"id": "a", "text": "title"},
+        {"id": "b", "text": "src"},
+        {"id": "c", "text": "alt"},
+        {"id": "d", "text": "name"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 3,
+      "text": "Какой тег определяет заголовок первого уровня?",
+      "options": [
+        {"id": "a", "text": "<header>"},
+        {"id": "b", "text": "<head>"},
+        {"id": "c", "text": "<h6>"},
+        {"id": "d", "text": "<h1>"}
+      ],
+      "correct_answer": "d"
+    },
+    {
+      "id": 4,
+      "text": "Какой тег создаёт нумерованный список?",
+      "options": [
+        {"id": "a", "text": "<ul>"},
+        {"id": "b", "text": "<ol>"},
+        {"id": "c", "text": "<li>"},
+        {"id": "d", "text": "<nl>"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 5,
+      "text": "Какой тег используется для вставки изображения?",
+      "options": [
+        {"id": "a", "text": "<picture>"},
+        {"id": "b", "text": "<image>"},
+        {"id": "c", "text": "<img>"},
+        {"id": "d", "text": "<src>"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 6,
+      "text": "Какой DOCTYPE правильный для HTML5?",
+      "options": [
+        {"id": "a", "text": "<!DOCTYPE html5>"},
+        {"id": "b", "text": "<!DOCTYPE HTML PUBLIC>"},
+        {"id": "c", "text": "<!DOCTYPE html>"},
+        {"id": "d", "text": "<DOCTYPE html>"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 7,
+      "text": "Какой тег создаёт таблицу?",
+      "options": [
+        {"id": "a", "text": "<tab>"},
+        {"id": "b", "text": "<table>"},
+        {"id": "c", "text": "<grid>"},
+        {"id": "d", "text": "<tbl>"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 8,
+      "text": "Какой атрибут тега <a> указывает адрес ссылки?",
+      "options": [
+        {"id": "a", "text": "link"},
+        {"id": "b", "text": "src"},
+        {"id": "c", "text": "href"},
+        {"id": "d", "text": "url"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 9,
+      "text": "Какой тег выделяет текст как важный (семантически)?",
+      "options": [
+        {"id": "a", "text": "<b>"},
+        {"id": "b", "text": "<bold>"},
+        {"id": "c", "text": "<strong>"},
+        {"id": "d", "text": "<em>"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 10,
+      "text": "Какой тег используется для создания формы?",
+      "options": [
+        {"id": "a", "text": "<input>"},
+        {"id": "b", "text": "<form>"},
+        {"id": "c", "text": "<fieldset>"},
+        {"id": "d", "text": "<submit>"}
+      ],
+      "correct_answer": "b"
+    }
+  ]
+}

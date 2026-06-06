@@ -1,0 +1,120 @@
+{
+  "id": 2,
+  "title": "Основы CSS",
+  "description": "Проверьте знание базового синтаксиса и свойств CSS. Один правильный ответ на каждый вопрос.",
+  "type": "single_choice",
+  "time_limit": 600,
+  "passing_score": 70,
+  "questions": [
+    {
+      "id": 1,
+      "text": "Какое свойство CSS задаёт цвет текста?",
+      "options": [
+        {"id": "a", "text": "font-color"},
+        {"id": "b", "text": "text-color"},
+        {"id": "c", "text": "color"},
+        {"id": "d", "text": "foreground-color"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 2,
+      "text": "Как в CSS выбрать элемент с классом 'box'?",
+      "options": [
+        {"id": "a", "text": "#box"},
+        {"id": "b", "text": ".box"},
+        {"id": "c", "text": "*box"},
+        {"id": "d", "text": "box"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 3,
+      "text": "Какое значение свойства display делает элемент строчно-блочным?",
+      "options": [
+        {"id": "a", "text": "block"},
+        {"id": "b", "text": "inline"},
+        {"id": "c", "text": "inline-block"},
+        {"id": "d", "text": "flex"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 4,
+      "text": "Какое свойство управляет расстоянием внутри элемента (от границы до содержимого)?",
+      "options": [
+        {"id": "a", "text": "margin"},
+        {"id": "b", "text": "padding"},
+        {"id": "c", "text": "border"},
+        {"id": "d", "text": "spacing"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 5,
+      "text": "Какое свойство CSS задаёт размер шрифта?",
+      "options": [
+        {"id": "a", "text": "font-style"},
+        {"id": "b", "text": "text-size"},
+        {"id": "c", "text": "font-weight"},
+        {"id": "d", "text": "font-size"}
+      ],
+      "correct_answer": "d"
+    },
+    {
+      "id": 6,
+      "text": "Как задать фоновый цвет элемента красным через HEX?",
+      "options": [
+        {"id": "a", "text": "background-color: red"},
+        {"id": "b", "text": "background-color: #FF0000"},
+        {"id": "c", "text": "background: rgb(255,0,0)"},
+        {"id": "d", "text": "Все варианты верны"}
+      ],
+      "correct_answer": "d"
+    },
+    {
+      "id": 7,
+      "text": "Какое свойство делает flex-контейнер из элемента?",
+      "options": [
+        {"id": "a", "text": "display: block"},
+        {"id": "b", "text": "position: flex"},
+        {"id": "c", "text": "display: flex"},
+        {"id": "d", "text": "flex: 1"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 8,
+      "text": "Какое свойство CSS отвечает за прозрачность элемента?",
+      "options": [
+        {"id": "a", "text": "visibility"},
+        {"id": "b", "text": "opacity"},
+        {"id": "c", "text": "transparency"},
+        {"id": "d", "text": "alpha"}
+      ],
+      "correct_answer": "b"
+    },
+    {
+      "id": 9,
+      "text": "Как сделать текст жирным через CSS?",
+      "options": [
+        {"id": "a", "text": "font-style: bold"},
+        {"id": "b", "text": "text-weight: bold"},
+        {"id": "c", "text": "font-weight: bold"},
+        {"id": "d", "text": "font: bold"}
+      ],
+      "correct_answer": "c"
+    },
+    {
+      "id": 10,
+      "text": "Какой селектор выбирает элемент по идентификатору?",
+      "options": [
+        {"id": "a", "text": ".id"},
+        {"id": "b", "text": "*id"},
+        {"id": "c", "text": "#id"},
+        {"id": "d", "text": "@id"}
+      ],
+      "correct_answer": "c"
+    }
+  ]
+}
