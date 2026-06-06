@@ -47,7 +47,7 @@ if (in_array($origin, $allowedOrigins, true) || in_array('*', $allowedOrigins, t
     header('Access-Control-Allow-Origin: ' . ($allowedOrigins[0] ?? ''));
 }
 
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true');
 header('Content-Type: application/json; charset=utf-8');
@@ -65,6 +65,7 @@ use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
 use App\Controllers\ArticleController;
 use App\Controllers\AdminArticleController;
+use App\Controllers\AdminUserController;
 
 $router = new Router();
 
@@ -98,10 +99,19 @@ $router->delete('/api/articles/{id}',                   [ArticleController::clas
 // Admin Articles (with filtering, sorting, pagination)
 $router->get('/api/admin/articles',       [AdminArticleController::class, 'index']);
 $router->get('/api/admin/articles/{id}', [AdminArticleController::class, 'show']);
+$router->get('/api/admin/articles/{id}/download', [AdminArticleController::class, 'download']);
 $router->post('/api/admin/articles',     [AdminArticleController::class, 'create']);
 $router->put('/api/admin/articles/{id}', [AdminArticleController::class, 'update']);
 $router->delete('/api/admin/articles/{id}', [AdminArticleController::class, 'delete']);
 $router->get('/api/admin/categories',    [AdminArticleController::class, 'categories']);
+
+// Admin Users
+$router->get('/api/admin/users',              [AdminUserController::class, 'index']);
+$router->get('/api/admin/users/{id}',         [AdminUserController::class, 'show']);
+$router->post('/api/admin/users',             [AdminUserController::class, 'create']);
+$router->put('/api/admin/users/{id}',         [AdminUserController::class, 'update']);
+$router->delete('/api/admin/users/{id}',      [AdminUserController::class, 'delete']);
+$router->patch('/api/admin/users/{id}/role',  [AdminUserController::class, 'changeRole']);
 
 // Health check
 $router->get('/api/health', function () {

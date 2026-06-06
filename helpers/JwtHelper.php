@@ -68,7 +68,17 @@ class JwtHelper
      */
     public function fromHeader(): ?string
     {
-        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        // Try standard header first, then fallback for Apache CGI/FastCGI
+        $header = $_SERVER['HTTP_AUTHORIZATION']
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+            ?? '';
+
+        // Also check apache_request_headers() as a last resort
+        if (!$header && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            $header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        }
+
         if (str_starts_with($header, 'Bearer ')) {
             return substr($header, 7);
         }

@@ -42,6 +42,14 @@ class Router
     }
 
     /**
+     * Register a PATCH route.
+     */
+    public function patch(string $path, callable|array $handler): void
+    {
+        $this->addRoute('PATCH', $path, $handler);
+    }
+
+    /**
      * Set logger instance for request logging.
      */
     public function setLogger(Logger $logger): void

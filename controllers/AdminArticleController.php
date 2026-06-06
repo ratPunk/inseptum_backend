@@ -167,6 +167,36 @@ class AdminArticleController extends Controller
         $this->json(['categories' => $categories]);
     }
 
+    // GET /api/admin/articles/{id}/download
+    public function download(array $params = []): void
+    {
+        $id = (int)($params['id'] ?? 0);
+        if ($id <= 0) {
+            $this->error('Invalid article ID', 400);
+        }
+
+        $article = $this->articleModel->findById($id);
+        if (!$article) {
+            $this->error('Article not found', 404);
+        }
+
+        $filepath = self::STORAGE_PATH . '/' . $article['filename'];
+        if (!file_exists($filepath)) {
+            $this->error('File not found on server', 404);
+        }
+
+        // Remove default Content-Type header set in index.php
+        header_remove('Content-Type');
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        header('Content-Disposition: attachment; filename="' . $article['filename'] . '"');
+        header('Content-Length: ' . filesize($filepath));
+        header('Cache-Control: no-cache, must-revalidate');
+
+        readfile($filepath);
+        exit;
+    }
+
     // ─── Private helpers ──────────────────────────────────────────────────
 
     private function uploadDocx(array $file): string
