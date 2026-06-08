@@ -15,9 +15,8 @@ class AdminArticleController extends Controller
     private Category $categoryModel;
     private Logger   $logger;
 
-    // Absolute path resolved at class-load time so it is correct on any OS / deploy layout.
-    // __DIR__ here is the `controllers/` directory; we go one level up to project root.
-    private const STORAGE_PATH = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'articles';
+    // Absolute path resolved at runtime via realpath() in each method.
+    private const STORAGE_PATH = __DIR__ . '/../storage/articles';
 
     public function __construct()
     {
@@ -203,141 +202,54 @@ class AdminArticleController extends Controller
 
     private function uploadDocx(array $file): string
     {
-        // ── 1. Validate extension ─────────────────────────────────────────
         $ext = strtolower(pathinfo($file['name'] ?? '', PATHINFO_EXTENSION));
         if ($ext !== 'docx') {
             $this->error('Only .docx files are allowed', 422);
         }
 
-        // ── 2. Resolve storage path to a real absolute path ───────────────
-        // realpath() returns false if the path does not exist yet, so we
-        // resolve the parent (project root) and append manually.
-        $rawPath     = self::STORAGE_PATH;
         $projectRoot = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..') ?: (__DIR__ . DIRECTORY_SEPARATOR . '..');
         $storagePath = $projectRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'articles';
 
-        // ── 3. Create directory if absent ─────────────────────────────────
-        $dirExists = is_dir($storagePath);
-        if (!$dirExists) {
-            error_clear_last();
-            $mkdirOk   = mkdir($storagePath, 0755, true);
-            $mkdirErr  = error_get_last();
-            $dirExists = $mkdirOk;
-
-            if (!$mkdirOk) {
-                $this->logger->error('mkdir failed for storage path', [
-                    'path'      => $storagePath,
-                    'php_error' => $mkdirErr,
-                ]);
+        if (!is_dir($storagePath)) {
+            if (!mkdir($storagePath, 0777, true)) {
+                $this->logger->error('uploadDocx: не удалось создать директорию', ['path' => $storagePath]);
                 $this->error('Failed to create upload directory', 500);
             }
         }
-        $dirWritable = is_writable($storagePath);
 
-        // ── 4. Build destination ──────────────────────────────────────────
-        $uniqueName  = uniqid('article_', true) . '.docx';
-        $destination = $storagePath . DIRECTORY_SEPARATOR . $uniqueName;
+        $tmpName = $file['tmp_name'] ?? '';
 
-        // ── 5. Inspect tmp file ───────────────────────────────────────────
-        $tmpName     = $file['tmp_name'] ?? '';
-        $tmpExists   = $tmpName !== '' && file_exists($tmpName);
-        $tmpReadable = $tmpExists && is_readable($tmpName);
-        $isUploaded  = $tmpExists && is_uploaded_file($tmpName);
-        $tmpSize     = $tmpExists ? filesize($tmpName) : null;
-
-        // ── 6. Log full diagnostics ───────────────────────────────────────
-        $this->logger->article('uploadDocx: attempt', [
-            'original_name'          => $file['name']  ?? '',
-            'upload_error_code'      => $file['error'] ?? 'n/a',
-            'tmp_name'               => $tmpName,
-            'tmp_exists'             => $tmpExists,
-            'tmp_readable'           => $tmpReadable,
-            'is_uploaded_file'       => $isUploaded,
-            'tmp_size_bytes'         => $tmpSize,
-            'raw_STORAGE_PATH_const' => $rawPath,
-            'resolved_storage_path'  => $storagePath,
-            'storage_dir_exists'     => $dirExists,
-            'storage_dir_writable'   => $dirWritable,
-            'destination'            => $destination,
-            'php_upload_tmp_dir'     => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
-            'upload_max_filesize'    => ini_get('upload_max_filesize'),
-            'post_max_size'          => ini_get('post_max_size'),
-            'open_basedir'           => ini_get('open_basedir') ?: '(none)',
-            'process_user'           => function_exists('posix_getpwuid')
-                                            ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown')
-                                            : 'n/a (Windows)',
-            'php_version'            => PHP_VERSION,
-            'os'                     => PHP_OS,
-        ]);
-
-        if (!$tmpExists || !$isUploaded) {
-            $this->logger->error('uploadDocx: tmp file invalid or not a real upload', [
+        if ($tmpName === '' || !file_exists($tmpName) || !is_uploaded_file($tmpName)) {
+            $this->logger->error('uploadDocx: загруженный файл недоступен', [
                 'tmp_name'        => $tmpName,
-                'tmp_exists'      => $tmpExists,
-                'is_uploaded_file'=> $isUploaded,
+                'upload_err_code' => $file['error'] ?? 'n/a',
             ]);
             $this->error('Uploaded file is missing or corrupted', 422);
         }
 
-        // ── 7. Try move_uploaded_file ─────────────────────────────────────
-        // Note: is_writable() can return false under ISPmanager/php-fpm even
-        // when the process actually CAN write (DAC_OVERRIDE capability, ACLs,
-        // same gid). We therefore attempt the move regardless and rely on the
-        // real error from the OS rather than the PHP stat() check.
-        if (!$dirWritable) {
-            $this->logger->warning('uploadDocx: is_writable() returned false — attempting move anyway', [
-                'storage_path' => $storagePath,
-                'owner_uid'    => fileowner($storagePath),
-                'perms'        => substr(sprintf('%o', fileperms($storagePath)), -4),
-            ]);
-        }
+        $uniqueName  = uniqid('article_', true) . '.docx';
+        $destination = $storagePath . DIRECTORY_SEPARATOR . $uniqueName;
 
-        error_clear_last();
-        $moved   = move_uploaded_file($tmpName, $destination);
-        $moveErr = error_get_last();
-
-        if ($moved) {
-            $this->logger->article('uploadDocx: move_uploaded_file succeeded', [
-                'destination' => $destination,
-                'filename'    => $uniqueName,
-            ]);
+        // Попытка 1: move_uploaded_file
+        if (move_uploaded_file($tmpName, $destination)) {
+            $this->logger->article('uploadDocx: файл сохранён', ['filename' => $uniqueName]);
             return $uniqueName;
         }
 
-        $this->logger->error('uploadDocx: move_uploaded_file failed', [
-            'tmp_name'     => $tmpName,
-            'destination'  => $destination,
-            'dir_writable' => $dirWritable,
-            'owner_uid'    => fileowner($storagePath),
-            'perms'        => substr(sprintf('%o', fileperms($storagePath)), -4),
-            'php_error'    => $moveErr,
-        ]);
-
-        // ── 8. Fallback: copy() + unlink() ───────────────────────────────
-        error_clear_last();
-        $copied  = copy($tmpName, $destination);
-        $copyErr = error_get_last();
-
-        if ($copied) {
+        // Попытка 2: copy (fallback для cross-uid окружений)
+        if (copy($tmpName, $destination)) {
             @unlink($tmpName);
-            $this->logger->article('uploadDocx: fallback copy() succeeded', [
-                'destination' => $destination,
-                'filename'    => $uniqueName,
-            ]);
+            $this->logger->article('uploadDocx: файл сохранён через copy()', ['filename' => $uniqueName]);
             return $uniqueName;
         }
 
-        // ── 9. Both strategies failed ─────────────────────────────────────
-        $this->logger->error('uploadDocx: both move and copy failed', [
-            'tmp_name'               => $tmpName,
-            'destination'            => $destination,
-            'dir_writable'           => $dirWritable,
-            'destination_dir_exists' => is_dir(dirname($destination)),
-            'destination_writable'   => is_writable(dirname($destination)),
-            'copy_php_error'         => $copyErr,
-            'tmp_size_bytes'         => $tmpSize,
-            'free_disk_bytes'        => function_exists('disk_free_space') ? disk_free_space($storagePath) : 'n/a',
-            'fix_instruction'        => 'Recreate storage/articles via ISPmanager file manager so it is owned by the php-fpm user',
+        $this->logger->error('uploadDocx: не удалось сохранить файл', [
+            'tmp_name'        => $tmpName,
+            'destination'     => $destination,
+            'dir_writable'    => is_writable($storagePath),
+            'dir_perms'       => substr(sprintf('%o', fileperms($storagePath)), -4),
+            'dir_owner_uid'   => fileowner($storagePath),
+            'free_disk_bytes' => function_exists('disk_free_space') ? disk_free_space($storagePath) : 'n/a',
         ]);
 
         $this->error('Failed to save uploaded file', 500);
