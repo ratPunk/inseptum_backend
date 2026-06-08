@@ -126,21 +126,47 @@ $router->get('/api/health', function () {
 $router->get('/api/debug/upload', function () {
     $storageBase = realpath(__DIR__ . '/storage') ?: __DIR__ . '/storage';
     $articlesDir = $storageBase . '/articles';
+    $logsDir     = $storageBase . '/logs';
+    $testsDir    = $storageBase . '/tests';
+
+    $stat = function (string $dir): array {
+        if (!is_dir($dir)) {
+            return ['exists' => false];
+        }
+        $perms = fileperms($dir);
+        return [
+            'exists'   => true,
+            'writable' => is_writable($dir),
+            'perms'    => substr(sprintf('%o', $perms), -4),
+            'owner_uid'=> fileowner($dir),
+        ];
+    };
+
+    $chmodResult = null;
+    foreach ([$articlesDir, $logsDir, $testsDir] as $dir) {
+        if (is_dir($dir) && !is_writable($dir)) {
+            $chmodResult[$dir] = chmod($dir, 0775);
+        }
+    }
+
     echo json_encode([
-        '__DIR__'            => __DIR__,
-        'storage_base'       => $storageBase,
-        'articles_dir'       => $articlesDir,
-        'articles_exists'    => is_dir($articlesDir),
-        'articles_writable'  => is_dir($articlesDir) && is_writable($articlesDir),
-        'upload_tmp_dir'     => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
-        'upload_max_filesize'=> ini_get('upload_max_filesize'),
-        'post_max_size'      => ini_get('post_max_size'),
-        'open_basedir'       => ini_get('open_basedir') ?: '(none)',
-        'process_user'       => function_exists('posix_getpwuid')
-                                    ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown')
-                                    : 'n/a (Windows)',
-        'php_version'        => PHP_VERSION,
-        'os'                 => PHP_OS,
+        '__DIR__'             => __DIR__,
+        'storage_base'        => $storageBase,
+        'articles'            => $stat($articlesDir),
+        'logs'                => $stat($logsDir),
+        'tests'               => $stat($testsDir),
+        'chmod_attempts'      => $chmodResult,
+        'articles_writable_after_chmod' => is_writable($articlesDir),
+        'upload_tmp_dir'      => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size'       => ini_get('post_max_size'),
+        'open_basedir'        => ini_get('open_basedir') ?: '(none)',
+        'process_user'        => function_exists('posix_getpwuid')
+                                     ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown')
+                                     : 'n/a (Windows)',
+        'process_uid'         => function_exists('posix_geteuid') ? posix_geteuid() : 'n/a',
+        'php_version'         => PHP_VERSION,
+        'os'                  => PHP_OS,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 });
