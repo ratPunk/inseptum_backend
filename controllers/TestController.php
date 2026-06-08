@@ -123,22 +123,46 @@ class TestController extends Controller
         if (!$content) {
             $this->error('Test content not found', 404);
         }
+
+        // Нормализуем ответы: поддерживаем два формата:
+        //   1. Массив объектов: [{"question_id": 1, "answer": "a"}, ...]  (формат фронтенда)
+        //   2. Словарь:         {"1": "a", "2": "b"}                      (legacy)
+        $answersMap = [];
+        $rawAnswers = $body['answers'];
+        if (isset($rawAnswers[0]) && is_array($rawAnswers[0])) {
+            // Формат массива объектов
+            foreach ($rawAnswers as $item) {
+                if (isset($item['question_id'])) {
+                    $answersMap[(int)$item['question_id']] = $item['answer'] ?? null;
+                }
+            }
+        } else {
+            // Формат словаря
+            foreach ($rawAnswers as $qId => $answer) {
+                $answersMap[(int)$qId] = $answer;
+            }
+        }
+
         $score = 0;
         $maxScore = 0;
+        $correctAnswers = 0;
         $results = [];
         foreach ($content['questions'] as $question) {
-            $qId = $question['id'];
+            $qId = (int)$question['id'];
             $points = (int)($question['points'] ?? 1);
             $maxScore += $points;
-            $userAnswer = $body['answers'][$qId] ?? null;
-            $isCorrect = $userAnswer === $question['correctAnswerId'];
+            // Поддерживаем оба имени поля: correct_answer (текущий JSON) и correctAnswerId (legacy)
+            $correctAnswer = $question['correct_answer'] ?? $question['correctAnswerId'] ?? null;
+            $userAnswer = $answersMap[$qId] ?? null;
+            $isCorrect = $userAnswer !== null && $userAnswer === $correctAnswer;
             if ($isCorrect) {
                 $score += $points;
+                $correctAnswers++;
             }
             $results[] = [
                 'question_id' => $qId,
                 'user_answer' => $userAnswer,
-                'correct_answer' => $question['correctAnswerId'],
+                'correct_answer' => $correctAnswer,
                 'is_correct' => $isCorrect,
                 'points' => $isCorrect ? $points : 0,
             ];
@@ -149,14 +173,24 @@ class TestController extends Controller
         } else {
             $attemptId = $this->userTestModel->startAttempt($userId, $testId, $maxScore);
         }
-        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $body['answers']);
+        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $answersMap);
         $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0;
+        $totalQuestions = count($content['questions']);
+        $passed = $maxScore > 0 && ($percentage >= ($content['passing_score'] ?? 60));
         $this->json([
-            'score' => $score,
-            'max_score' => $maxScore,
-            'percentage' => $percentage,
-            'results' => $results,
-            'attempt_id' => $attemptId,
+            'success' => true,
+            'data' => [
+                'attempt_id' => $attemptId,
+                'test_id' => $testId,
+                'score' => $score,
+                'max_score' => $maxScore,
+                'percentage' => $percentage,
+                'passed' => $passed,
+                'correct_answers' => $correctAnswers,
+                'total_questions' => $totalQuestions,
+                'results' => $results,
+                'created_at' => date('c'),
+            ],
         ]);
     }
 
