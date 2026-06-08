@@ -142,15 +142,35 @@ $router->get('/api/debug/upload', function () {
         ];
     };
 
-    // ── Попытка реально записать файл ────────────────────────────────────────
+    // ── Состояние родительской папки storage/ ────────────────────────────────
+    $storageDir      = $storageBase;
+    $storageDirStat  = $stat($storageDir);
+
+    // ── Если articles/ не существует — попробовать создать ───────────────────
+    $mkdirResult = null;
+    $mkdirError  = null;
+    if (!is_dir($articlesDir)) {
+        error_clear_last();
+        $mkdirResult = mkdir($articlesDir, 0755, true);
+        $mkdirError  = error_get_last();
+    }
+
+    // ── Попытка реально записать файл в articles/ ────────────────────────────
     $testFile   = $articlesDir . '/_write_test_' . time() . '.tmp';
     $writeOk    = false;
     $writeError = null;
     error_clear_last();
-    $writeOk  = @file_put_contents($testFile, 'test') !== false;
+    $writeOk    = @file_put_contents($testFile, 'test') !== false;
     $writeError = error_get_last();
     if ($writeOk) {
         @unlink($testFile);
+    }
+
+    // ── Попытка записать в storage/ напрямую ─────────────────────────────────
+    $testFile2    = $storageDir . '/_write_test_' . time() . '.tmp';
+    $writeOk2     = @file_put_contents($testFile2, 'test') !== false;
+    if ($writeOk2) {
+        @unlink($testFile2);
     }
 
     // ── uid/gid процесса через /proc/self/status ──────────────────────────────
@@ -173,25 +193,26 @@ $router->get('/api/debug/upload', function () {
     }
 
     echo json_encode([
-        '__DIR__'                => __DIR__,
-        'storage_base'           => $storageBase,
-        'articles'               => $stat($articlesDir),
-        'logs'                   => $stat($logsDir),
-        'tests'                  => $stat($testsDir),
-        'write_test'             => [
-            'success'   => $writeOk,
-            'php_error' => $writeError,
-        ],
-        'process_uid'            => $procUid,
-        'process_gid'            => $procGid,
-        'shell_id'               => $shellId,
-        'upload_tmp_dir'         => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
-        'upload_tmp_writable'    => is_writable(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()),
-        'upload_max_filesize'    => ini_get('upload_max_filesize'),
-        'post_max_size'          => ini_get('post_max_size'),
-        'open_basedir'           => ini_get('open_basedir') ?: '(none)',
-        'php_version'            => PHP_VERSION,
-        'os'                     => PHP_OS,
+        '__DIR__'                   => __DIR__,
+        'storage_base'              => $storageBase,
+        'storage_dir'               => $storageDirStat,
+        'articles'                  => $stat($articlesDir),
+        'logs'                      => $stat($logsDir),
+        'tests'                     => $stat($testsDir),
+        'mkdir_articles'            => $mkdirResult,
+        'mkdir_error'               => $mkdirError,
+        'write_test_articles'       => ['success' => $writeOk,  'php_error' => $writeError],
+        'write_test_storage'        => ['success' => $writeOk2],
+        'process_uid'               => $procUid,
+        'process_gid'               => $procGid,
+        'shell_id'                  => $shellId,
+        'upload_tmp_dir'            => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+        'upload_tmp_writable'       => is_writable(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()),
+        'upload_max_filesize'       => ini_get('upload_max_filesize'),
+        'post_max_size'             => ini_get('post_max_size'),
+        'open_basedir'              => ini_get('open_basedir') ?: '(none)',
+        'php_version'               => PHP_VERSION,
+        'os'                        => PHP_OS,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 });
