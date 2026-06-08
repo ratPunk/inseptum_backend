@@ -71,8 +71,9 @@ use App\Controllers\AdminTestController;
 
 $router = new Router();
 
-// Initialize logger for request logging
+// Initialize logger and register global PHP error / exception handlers
 $logger = Logger::getInstance();
+$logger->registerHandlers();
 $router->setLogger($logger);
 
 // Auth
@@ -118,6 +119,29 @@ $router->patch('/api/admin/users/{id}/role',  [AdminUserController::class, 'chan
 // Health check
 $router->get('/api/health', function () {
     echo json_encode(['status' => 'ok', 'time' => date('c')]);
+    exit;
+});
+
+// ── Temporary upload diagnostics (remove after fix is confirmed) ─────────────
+$router->get('/api/debug/upload', function () {
+    $storageBase = realpath(__DIR__ . '/storage') ?: __DIR__ . '/storage';
+    $articlesDir = $storageBase . '/articles';
+    echo json_encode([
+        '__DIR__'            => __DIR__,
+        'storage_base'       => $storageBase,
+        'articles_dir'       => $articlesDir,
+        'articles_exists'    => is_dir($articlesDir),
+        'articles_writable'  => is_dir($articlesDir) && is_writable($articlesDir),
+        'upload_tmp_dir'     => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+        'upload_max_filesize'=> ini_get('upload_max_filesize'),
+        'post_max_size'      => ini_get('post_max_size'),
+        'open_basedir'       => ini_get('open_basedir') ?: '(none)',
+        'process_user'       => function_exists('posix_getpwuid')
+                                    ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown')
+                                    : 'n/a (Windows)',
+        'php_version'        => PHP_VERSION,
+        'os'                 => PHP_OS,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 });
 
