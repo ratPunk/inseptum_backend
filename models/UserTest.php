@@ -68,16 +68,16 @@ class UserTest
         return (int)$this->db->lastInsertId();
     }
 
-    public function completeAttempt(int $id, int $score, int $maxScore, array $answers): bool
+    public function completeAttempt(int $id, int $score, int $maxScore, array $answers, bool $passed = false): bool
     {
         $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0;
 
         $stmt = $this->db->prepare(
             'UPDATE user_tests
-             SET status = "completed", score = ?, max_score = ?, percentage = ?, completed_at = NOW(), answers_json = ?, updated_at = NOW()
+             SET status = "completed", score = ?, max_score = ?, percentage = ?, passed = ?, completed_at = NOW(), answers_json = ?, updated_at = NOW()
              WHERE id = ?'
         );
-        return $stmt->execute([$score, $maxScore, $percentage, json_encode($answers), $id]);
+        return $stmt->execute([$score, $maxScore, $percentage, (int)$passed, json_encode($answers), $id]);
     }
 
     public function getUserProgress(int $userId): array

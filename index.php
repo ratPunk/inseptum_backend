@@ -124,6 +124,7 @@ $router->get('/api/health', function () {
 
 // Tests
 $router->get('/api/tests',                      [TestController::class, 'index']);
+$router->get('/api/tests/results',              [TestController::class, 'myResults']);
 $router->get('/api/tests/{id}',                 [TestController::class, 'show']);
 $router->get('/api/tests/{id}/content',         [TestController::class, 'content']);
 $router->post('/api/tests/{id}/start',          [TestController::class, 'start']);

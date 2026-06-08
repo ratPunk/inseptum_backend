@@ -173,10 +173,10 @@ class TestController extends Controller
         } else {
             $attemptId = $this->userTestModel->startAttempt($userId, $testId, $maxScore);
         }
-        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $answersMap);
         $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0;
         $totalQuestions = count($content['questions']);
         $passed = $maxScore > 0 && ($percentage >= ($content['passing_score'] ?? 60));
+        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $answersMap, $passed);
         $this->json([
             'success' => true,
             'data' => [
@@ -192,6 +192,27 @@ class TestController extends Controller
                 'created_at' => date('c'),
             ],
         ]);
+    }
+
+    // GET /api/tests/results  — список результатов текущего пользователя
+    public function myResults(array $params = []): void
+    {
+        $userId = $this->requireAuth();
+        $rows = $this->userTestModel->findByUser($userId);
+
+        $data = array_map(static function (array $row): array {
+            return [
+                'test_id'    => (int)$row['test_id'],
+                'passed'     => (bool)(int)$row['passed'],
+                'score'      => (int)$row['score'],
+                'max_score'  => (int)$row['max_score'],
+                'percentage' => (float)$row['percentage'],
+                'status'     => $row['status'],
+                'created_at' => $row['created_at'],
+            ];
+        }, $rows);
+
+        $this->json(['success' => true, 'data' => $data]);
     }
 
     // GET /api/tests/{id}/progress
