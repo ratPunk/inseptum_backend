@@ -35,10 +35,18 @@ class TestController extends Controller
         if ($userId) {
             $userTests = $this->userTestModel->findByUser($userId);
             $progressMap = [];
+            $attemptsCount = [];
             foreach ($userTests as $ut) {
                 $testId = (int)$ut['test_id'];
-                if (!isset($progressMap[$testId])
-                    || $ut['percentage'] > $progressMap[$testId]['percentage']) {
+                $attemptsCount[$testId] = ($attemptsCount[$testId] ?? 0) + 1;
+
+                // Лучшая попытка: сначала passed=1, затем по проценту.
+                $current = $progressMap[$testId] ?? null;
+                $isBetter = $current === null
+                    || ((int)$ut['passed'] > (int)$current['passed'])
+                    || ((int)$ut['passed'] === (int)$current['passed']
+                        && (float)$ut['percentage'] > (float)$current['percentage']);
+                if ($isBetter) {
                     $progressMap[$testId] = $ut;
                 }
             }
@@ -47,10 +55,11 @@ class TestController extends Controller
                 if (isset($progressMap[$tid])) {
                     $test['user_progress'] = [
                         'status' => $progressMap[$tid]['status'],
+                        'passed' => (bool)(int)$progressMap[$tid]['passed'],
                         'score' => (int)$progressMap[$tid]['score'],
                         'max_score' => (int)$progressMap[$tid]['max_score'],
                         'percentage' => (float)$progressMap[$tid]['percentage'],
-                        'attempts' => (int)$progressMap[$tid]['attempt'],
+                        'attempts' => (int)($attemptsCount[$tid] ?? 0),
                     ];
                 } else {
                     $test['user_progress'] = null;
@@ -173,10 +182,11 @@ class TestController extends Controller
         } else {
             $attemptId = $this->userTestModel->startAttempt($userId, $testId, $maxScore);
         }
-        $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0;
+        $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0.0;
         $totalQuestions = count($content['questions']);
-        $passed = $maxScore > 0 && ($percentage >= ($content['passing_score'] ?? 60));
-        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $answersMap, $passed);
+        $passingScore = (float)($content['passing_score'] ?? 60);
+        $passed = $maxScore > 0 && ($percentage >= $passingScore);
+        $this->userTestModel->completeAttempt($attemptId, $score, $maxScore, $answersMap, (bool)$passed);
         $this->json([
             'success' => true,
             'data' => [
