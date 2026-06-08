@@ -133,40 +133,65 @@ $router->get('/api/debug/upload', function () {
         if (!is_dir($dir)) {
             return ['exists' => false];
         }
-        $perms = fileperms($dir);
         return [
-            'exists'   => true,
-            'writable' => is_writable($dir),
-            'perms'    => substr(sprintf('%o', $perms), -4),
-            'owner_uid'=> fileowner($dir),
+            'exists'    => true,
+            'writable'  => is_writable($dir),
+            'perms'     => substr(sprintf('%o', fileperms($dir)), -4),
+            'owner_uid' => fileowner($dir),
+            'owner_gid' => filegroup($dir),
         ];
     };
 
-    $chmodResult = null;
-    foreach ([$articlesDir, $logsDir, $testsDir] as $dir) {
-        if (is_dir($dir) && !is_writable($dir)) {
-            $chmodResult[$dir] = chmod($dir, 0775);
+    // ── Попытка реально записать файл ────────────────────────────────────────
+    $testFile   = $articlesDir . '/_write_test_' . time() . '.tmp';
+    $writeOk    = false;
+    $writeError = null;
+    error_clear_last();
+    $writeOk  = @file_put_contents($testFile, 'test') !== false;
+    $writeError = error_get_last();
+    if ($writeOk) {
+        @unlink($testFile);
+    }
+
+    // ── uid/gid процесса через /proc/self/status ──────────────────────────────
+    $procUid = null;
+    $procGid = null;
+    if (is_readable('/proc/self/status')) {
+        $status = file_get_contents('/proc/self/status');
+        if (preg_match('/^Uid:\s+(\d+)/m', $status, $m)) {
+            $procUid = (int)$m[1];
+        }
+        if (preg_match('/^Gid:\s+(\d+)/m', $status, $m)) {
+            $procGid = (int)$m[1];
         }
     }
 
+    // ── uid/gid через shell (если разрешён) ───────────────────────────────────
+    $shellId = null;
+    if (function_exists('shell_exec')) {
+        $shellId = trim((string)@shell_exec('id 2>/dev/null'));
+    }
+
     echo json_encode([
-        '__DIR__'             => __DIR__,
-        'storage_base'        => $storageBase,
-        'articles'            => $stat($articlesDir),
-        'logs'                => $stat($logsDir),
-        'tests'               => $stat($testsDir),
-        'chmod_attempts'      => $chmodResult,
-        'articles_writable_after_chmod' => is_writable($articlesDir),
-        'upload_tmp_dir'      => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
-        'upload_max_filesize' => ini_get('upload_max_filesize'),
-        'post_max_size'       => ini_get('post_max_size'),
-        'open_basedir'        => ini_get('open_basedir') ?: '(none)',
-        'process_user'        => function_exists('posix_getpwuid')
-                                     ? (posix_getpwuid(posix_geteuid())['name'] ?? 'unknown')
-                                     : 'n/a (Windows)',
-        'process_uid'         => function_exists('posix_geteuid') ? posix_geteuid() : 'n/a',
-        'php_version'         => PHP_VERSION,
-        'os'                  => PHP_OS,
+        '__DIR__'                => __DIR__,
+        'storage_base'           => $storageBase,
+        'articles'               => $stat($articlesDir),
+        'logs'                   => $stat($logsDir),
+        'tests'                  => $stat($testsDir),
+        'write_test'             => [
+            'success'   => $writeOk,
+            'php_error' => $writeError,
+        ],
+        'process_uid'            => $procUid,
+        'process_gid'            => $procGid,
+        'shell_id'               => $shellId,
+        'upload_tmp_dir'         => ini_get('upload_tmp_dir') ?: sys_get_temp_dir(),
+        'upload_tmp_writable'    => is_writable(ini_get('upload_tmp_dir') ?: sys_get_temp_dir()),
+        'upload_max_filesize'    => ini_get('upload_max_filesize'),
+        'post_max_size'          => ini_get('post_max_size'),
+        'open_basedir'           => ini_get('open_basedir') ?: '(none)',
+        'php_version'            => PHP_VERSION,
+        'os'                     => PHP_OS,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 });
