@@ -279,18 +279,22 @@ class AdminArticleController extends Controller
             $this->error('Uploaded file is missing or corrupted', 422);
         }
 
+        // ── 7. Try move_uploaded_file ─────────────────────────────────────
+        // Note: is_writable() can return false under ISPmanager/php-fpm even
+        // when the process actually CAN write (DAC_OVERRIDE capability, ACLs,
+        // same gid). We therefore attempt the move regardless and rely on the
+        // real error from the OS rather than the PHP stat() check.
         if (!$dirWritable) {
-            $this->logger->error('uploadDocx: storage directory not writable', [
-                'storage_path'    => $storagePath,
-                'dir_exists'      => $dirExists,
+            $this->logger->warning('uploadDocx: is_writable() returned false — attempting move anyway', [
+                'storage_path' => $storagePath,
+                'owner_uid'    => fileowner($storagePath),
+                'perms'        => substr(sprintf('%o', fileperms($storagePath)), -4),
             ]);
-            $this->error('Server storage directory is not writable', 500);
         }
 
-        // ── 7. Try move_uploaded_file ─────────────────────────────────────
         error_clear_last();
-        $moved    = move_uploaded_file($tmpName, $destination);
-        $moveErr  = error_get_last();
+        $moved   = move_uploaded_file($tmpName, $destination);
+        $moveErr = error_get_last();
 
         if ($moved) {
             $this->logger->article('uploadDocx: move_uploaded_file succeeded', [
@@ -301,15 +305,18 @@ class AdminArticleController extends Controller
         }
 
         $this->logger->error('uploadDocx: move_uploaded_file failed', [
-            'tmp_name'    => $tmpName,
-            'destination' => $destination,
-            'php_error'   => $moveErr,
+            'tmp_name'     => $tmpName,
+            'destination'  => $destination,
+            'dir_writable' => $dirWritable,
+            'owner_uid'    => fileowner($storagePath),
+            'perms'        => substr(sprintf('%o', fileperms($storagePath)), -4),
+            'php_error'    => $moveErr,
         ]);
 
-        // ── 8. Fallback: copy() + unlink() (works cross-drive on Windows) ─
+        // ── 8. Fallback: copy() + unlink() ───────────────────────────────
         error_clear_last();
-        $copied   = copy($tmpName, $destination);
-        $copyErr  = error_get_last();
+        $copied  = copy($tmpName, $destination);
+        $copyErr = error_get_last();
 
         if ($copied) {
             @unlink($tmpName);
@@ -320,16 +327,17 @@ class AdminArticleController extends Controller
             return $uniqueName;
         }
 
-        // ── 9. Both strategies failed — log everything and return 500 ─────
-        $this->logger->error('uploadDocx: copy() fallback also failed', [
-            'tmp_name'              => $tmpName,
-            'destination'           => $destination,
-            'destination_dir'       => dirname($destination),
-            'destination_dir_exists'=> is_dir(dirname($destination)),
-            'destination_writable'  => is_writable(dirname($destination)),
-            'copy_php_error'        => $copyErr,
-            'tmp_size_bytes'        => $tmpSize,
-            'free_disk_bytes'       => function_exists('disk_free_space') ? disk_free_space($storagePath) : 'n/a',
+        // ── 9. Both strategies failed ─────────────────────────────────────
+        $this->logger->error('uploadDocx: both move and copy failed', [
+            'tmp_name'               => $tmpName,
+            'destination'            => $destination,
+            'dir_writable'           => $dirWritable,
+            'destination_dir_exists' => is_dir(dirname($destination)),
+            'destination_writable'   => is_writable(dirname($destination)),
+            'copy_php_error'         => $copyErr,
+            'tmp_size_bytes'         => $tmpSize,
+            'free_disk_bytes'        => function_exists('disk_free_space') ? disk_free_space($storagePath) : 'n/a',
+            'fix_instruction'        => 'Recreate storage/articles via ISPmanager file manager so it is owned by the php-fpm user',
         ]);
 
         $this->error('Failed to save uploaded file', 500);
